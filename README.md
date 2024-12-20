@@ -1,256 +1,138 @@
 # YouTube Notes App
 
-A web application for taking contextual screenshots of YouTube videos with automatic caption generation and note-taking capabilities. The app uses the YouTube IFrame API for video playback, Claude API for caption generation, and provides export options in both Markdown and PDF formats.
+A web application for taking structured notes while watching YouTube videos, with features for capturing screenshots, generating AI-powered captions, and creating comprehensive study materials.
 
-## Future directions:
-- add a button that captures a gif of screenshots instead of just one. 
-- capture multiple screenshots 1 sec apart (or can change that variable)
+## Project Structure
 
-## Directory Structure
 ```
 youtube-notes-app/
-├── .env                    # Environment variables configuration
-├── requirements.txt        # Python dependencies
-├── main.py                # FastAPI backend server
-└── frontend/
-    ├── package.json       # Node.js dependencies
-    ├── vite.config.js     # Vite configuration
-    ├── src/
-    │   ├── App.jsx       # Main React component
-    │   ├── main.jsx      # React entry point
-    │   ├── index.html    # HTML template
-    │   └── index.css     # Global styles (Tailwind CSS)
-    └── node_modules/      # Frontend dependencies (generated)
+├── frontend/                # React frontend application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   │   ├── YouTubePlayer.jsx      # YouTube video player component
+│   │   │   ├── ScreenshotManager.jsx  # Handles screenshot capture
+│   │   │   ├── TranscriptViewer.jsx   # Displays video transcript
+│   │   │   ├── NotesManager.jsx       # Manages notes and exports
+│   │   │   └── ScreenshotGallery.jsx  # Displays captured screenshots
+│   │   ├── App.jsx        # Main application component
+│   │   ├── config.js      # Configuration settings
+│   │   └── main.jsx       # Application entry point
+├── main.py                 # Python backend server
+└── README.md              # This file
 ```
 
-## Features
+### Updates on 12/19/24:
+Here's what has been implemented:
 
-- **YouTube Video Integration**: Embed and control YouTube video playback
-- **Screenshot Capture**: Take screenshots of video frames at specific timestamps
-- **Contextual Captions**: Automatically generate captions using the Claude API based on video transcript
-- **Note Taking**: Add global notes and per-screenshot annotations
-- **Export Options**: Export notes and screenshots as Markdown or PDF
-- **Transcript Integration**: Access video transcripts for context
+Created new transcript_retriever.py with enhanced transcript retrieval functionality:
 
-## Installation
+Multiple fallback methods for getting transcripts
+Better error handling
+Direct YouTube data API integration
+Support for auto-generated captions
 
-### Prerequisites
-- Python
-- Node.js
-- npm
-- Anthropic API key
 
-### Backend Setup
-1. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-   ```
+Updated main.py to:
 
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Use the new EnhancedTranscriptRetriever
+Maintain all existing functionality
+Improve error handling and logging
 
-3. Configure environment variables:
-   - Copy `.env.example` to `.env`
-   - Add your Anthropic API key:
-     ```
-     ANTHROPIC_API_KEY=your_api_key_here
-     ```
 
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
+Updated requirements.txt with all necessary dependencies
 
-2. Install Node.js dependencies:
-   ```bash
-   npm install
-   ```
+To test these changes:
 
-## Running the Application
 
-1. Start the backend server:
-   ```bash
-   # In the root directory with venv activated
-   python main.py
-   ```
-   The backend will run on http://localhost:8000
+## Component Architecture
 
-2. Start the frontend development server:
-   ```bash
-   # In the frontend directory
-   npm run dev
-   ```
-   The frontend will run on http://localhost:3000
+The application is built using a modular component architecture:
 
-## How It Works
+1. **App.jsx** (Parent Component)
+   - Manages global state (video ID, screenshots, notes, transcript)
+   - Handles localStorage persistence
+   - Coordinates communication between components
 
-### Backend (FastAPI)
-- Handles YouTube transcript retrieval
-- Integrates with Claude API for caption generation
-- Manages PDF and Markdown export functionality
-- Provides RESTful API endpoints for frontend communication
+2. **YouTubePlayer**
+   - Embeds and controls YouTube video playback
+   - Provides player controls API to other components
+   - Manages YouTube IFrame API integration
 
-### Frontend (React)
-- Embeds YouTube player using IFrame API
-- Manages application state and user interface
-- Handles screenshot capture using html2canvas
-- Provides note-taking interface
-- Manages export functionality
+3. **ScreenshotManager**
+   - Handles single and burst screenshot capture
+   - Manages screenshot capture settings
+   - Communicates with backend for image processing
 
-### Key Workflows
-1. **Video Loading**:
-   - User enters YouTube URL or video ID
-   - Frontend extracts video ID and initializes player
-   - Backend fetches video transcript
+4. **TranscriptViewer**
+   - Displays and manages video transcript
+   - Provides timestamp-based navigation
+   - Handles transcript analysis generation
 
-2. **Screenshot Capture**:
-   - User clicks "Take Screenshot"
-   - Frontend captures current frame
-   - Backend generates caption using transcript context and Claude API
-   - Screenshot, caption, and timestamp are stored in application state
+5. **NotesManager**
+   - Manages global notes
+   - Handles note export (Markdown, HTML, PDF)
+   - Manages print functionality
 
-3. **Note Taking**:
-   - Users can add global notes about the video
-   - Each screenshot can have individual notes
-   - Notes are stored in application state
+6. **ScreenshotGallery**
+   - Displays captured screenshots
+   - Manages screenshot captions and notes
+   - Handles caption regeneration
 
-4. **Export**:
-   - User selects export format (Markdown/PDF)
-   - Frontend generates structured content
-   - Backend handles file generation and download
+## State Management
+
+The application uses React's useState for state management, with localStorage for persistence. Key state elements:
+
+- videoId: Current YouTube video identifier
+- screenshots: Array of captured screenshots and metadata
+- notes: Global notes text
+- transcript: Video transcript data
+- transcriptAnalysis: Generated transcript outline
+- customPrompt: AI caption generation prompt
+
+## Backend Integration
+
+The Python backend (main.py) provides several API endpoints:
+
+- `/api/transcript/{video_id}`: Fetches video transcript
+- `/api/capture-screenshot`: Captures video screenshots
+- `/api/generate-caption`: Generates AI captions
+- `/api/analyze-transcript`: Creates transcript analysis
+- `/api/export-pdf`: Handles PDF export
+- `/api/export-rtf`: Handles RTF export
+
+## Setup and Development
+
+1. Frontend Setup:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+2. Backend Setup:
+```bash
+pip install -r requirements.txt
+python main.py
+```
+
+3. Access the application at `http://localhost:5173`
+
+## Network Access
+
+For local network access:
+1. Configure your backend to listen on `0.0.0.0` instead of `localhost`
+2. Update frontend config.js to use your machine's local IP address
+3. Ensure your firewall allows connections on the required ports
+
+## Known Issues and Limitations
+
+- Local storage limitations may affect performance with many screenshots
+- Backend must be running for screenshot and transcript features
+- YouTube API limitations may affect video availability
 
 ## Future Improvements
 
-1. **Enhanced Features**:
-   - Add user authentication
-   - Implement cloud storage for screenshots and notes
-   - Add video playlist support
-   - Include video chapter detection
-   - Enable sharing and collaboration features
-
-2. **Technical Improvements**:
-   - Add error handling and loading states
-   - Implement caching for transcripts
-   - Add unit and integration tests
-   - Optimize screenshot storage
-   - Add support for different video platforms
-
-3. **UI Enhancements**:
-   - Add dark mode support
-   - Improve mobile responsiveness
-   - Add keyboard shortcuts
-   - Implement drag-and-drop organization
-   - Add search functionality for notes
-
-4. **Integration Options**:
-   - Add support for other LLMs
-   - Integrate with note-taking apps (Notion, Evernote)
-   - Add support for automatic translation
-   - Enable direct social media sharing
-
-## Getting Help
-If you encounter any dependency-related errors, try removing the virtual environment and node_modules folder, then reinstalling dependencies:
-
-```bash
-# Backend
-deactivate  # If venv is active
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Frontend
-cd frontend
-rm -rf node_modules
-npm install
-```
-
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-
-# MORE DETAILS ON STRUCTURE 
-# YouTube Notes Application Guide
-
-## Overview
-This application allows users to take smart notes while watching YouTube videos. It combines video playback, automatic transcription, screenshot capture, and AI-powered caption generation to create comprehensive study materials.
-
-## Core Features
-- YouTube video playback with synchronized transcript
-- Screenshot capture with context
-- AI-powered caption generation using Claude
-- Note-taking for both screenshots and global context
-- Export to multiple formats (Markdown, PDF, RTF)
-
-## Technical Architecture
-
-### Frontend (React)
-- `App.jsx`: Main application component handling state and user interactions
-- `YouTubePlayer.jsx`: Custom YouTube player component using YouTube IFrame API
-
-### Backend (FastAPI)
-- Python-based API server handling various functionalities
-- Key endpoints:
-  ```
-  GET  /api/transcript/{video_id}  - Fetches video transcript
-  POST /api/capture-screenshot     - Captures video screenshots
-  POST /api/generate-caption       - Generates AI captions
-  POST /api/export-rtf            - Exports notes to RTF
-  POST /api/export-pdf            - Exports notes to PDF
-  ```
-
-### External Services Integration
-1. **YouTube Data**
-   - Uses `youtube-transcript-api` for transcript fetching
-   - YouTube IFrame API for video playback
-
-2. **Anthropic Claude API**
-   - Integrates with Claude 3 Sonnet for caption generation
-   - Uses context-aware prompting for relevant captions
-
-## Data Flow
-1. User enters YouTube URL
-2. Application extracts video ID and loads:
-   - Video player
-   - Video transcript
-   - Synchronized transcript highlighting
-
-3. Screenshot Workflow:
-   - User captures screenshot
-   - Backend processes video frame
-   - Gets surrounding transcript context
-   - Sends to Claude for caption generation
-   - Returns combined data to frontend
-
-4. Notes Management:
-   - Global notes for entire video
-   - Per-screenshot notes
-   - Context-aware transcript segments
-   - Custom AI prompting options
-
-## Export Functionality
-Supports multiple export formats:
-- Markdown: Direct text export
-- PDF: Converted using pypandoc
-- RTF: Formatted rich text export
-
-## Technical Requirements
-- Frontend: React with Tailwind CSS
-- Backend: Python 3.x with FastAPI
-- APIs: Anthropic API key
-- Dependencies: youtube-transcript-api, playwright, pypandoc
-
-## Communication Flow
-```
-Frontend <-> FastAPI Backend <-> External Services
-           |                  |
-           |- YouTube API     |- Anthropic API
-           |- Transcript API  |- File Conversion
-```
+- Implement proper database storage for persistence
+- Add user authentication for multi-user support
+- Optimize image storage and processing
+- Add cloud deployment support

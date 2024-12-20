@@ -75,3 +75,71 @@ Frontend <-> FastAPI Backend <-> External Services
            |- YouTube API     |- Anthropic API
            |- Transcript API  |- File Conversion
 ```
+
+# Code Walkthrough: App.jsx Explained
+
+### State Management
+The app uses React's `useState` to keep track of various pieces of information:
+- `videoId`: Stores the current YouTube video identifier
+- `screenshots`: Array that holds all captured screenshots
+- `notes`: Stores user's written notes
+- `player`: Reference to the YouTube player instance
+- `transcript`: Holds the video's text transcript
+- `loading` & `error`: Handle loading states and error messages
+- `currentTime`: Tracks current video timestamp
+
+### Key Components
+
+1. **Video Player Integration**
+   - YouTubePlayer component embeds the actual video
+   - Player controls are managed through YouTube's IFrame API
+   - Video state (play/pause/time) is synchronized with the app
+
+2. **Screenshot System**
+   - Uses html2canvas to capture video frames
+   - Each screenshot is stored with:
+     - Timestamp
+     - Generated caption
+     - User notes
+     - Surrounding transcript context
+
+3. **AI Caption Generation**
+   - Custom prompt system for Claude AI
+   - Takes surrounding transcript context
+   - Generates relevant captions for screenshots
+   - Uses Anthropic's API through backend
+
+4. **Transcript Management**
+   - Fetches transcript when video loads
+   - Synchronizes with video playback
+   - Highlights current section being played
+   - Provides context for AI captions
+
+### Data Flow in App.jsx
+1. User enters YouTube URL → App extracts video ID
+2. App loads video player and fetches transcript
+3. User can:
+   - Take screenshots (captures frame + context)
+   - Add notes (global or per screenshot)
+   - Customize AI prompts
+   - Export notes in various formats
+
+### Error Handling
+- Loading states show progress
+- Error messages display user-friendly notifications
+- Graceful fallbacks for missing data
+- Network request error handling
+
+### User Interface Elements
+- Video player with controls
+- Transcript display (toggleable)
+- Screenshot gallery
+- Notes editor
+- Custom prompt editor
+- Export options
+
+This structure makes the app modular and maintainable, with clear separation between:
+- User interface components
+- Data management (state)
+- External service integration
+- Error handling
