@@ -21,6 +21,12 @@ youtube-notes-app/
 └── README.md              # This file
 ```
 
+## Improvements roadmap and prompts:
+**1/6/25:** 
+i want you to use the tools in the youtube_info_extractor.py in PythonExamples folder to improve the web app by adding a section that appends all these details about the video to the bottom of the page, below the generated trasncript outline. I also want a button to hide/show it. We may want to create or modify a component to do this. The components directory currently has NotesManager, ScreenshotGallery, ScreenshotManager, YoutubePlayer, and TranscriptViewer.
+
+
+
 ### Updates on 12/19/24:
 Here's what has been implemented:
 

@@ -5,11 +5,13 @@ import { API_BASE_URL } from '../config';
 const ScreenshotGallery = ({
   screenshots,
   onScreenshotsUpdate,
-  customPrompt
+  customPrompt,
+  videoTitle
 }) => {
   const [visibleNotes, setVisibleNotes] = useState({});
   const [processingScreenshot, setProcessingScreenshot] = useState(false);
   const [error, setError] = useState('');
+  const [editMode, setEditMode] = useState(false);
 
   const formatTime = (seconds) => {
     const date = new Date(seconds * 1000);
@@ -23,10 +25,10 @@ const ScreenshotGallery = ({
     }));
   };
 
-  const regenerateCaption = async (screenshotIndex) => {
+  const regenerateCaption = async (index) => {
     try {
       setProcessingScreenshot(true);
-      const screenshot = screenshots[screenshotIndex];
+      const screenshot = screenshots[index];
       
       const response = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
         timestamp: screenshot.timestamp,
@@ -36,7 +38,7 @@ const ScreenshotGallery = ({
       });
 
       const updatedScreenshots = [...screenshots];
-      updatedScreenshots[screenshotIndex] = {
+      updatedScreenshots[index] = {
         ...screenshot,
         caption: response.data.caption
       };
@@ -66,73 +68,86 @@ const ScreenshotGallery = ({
     onScreenshotsUpdate(updatedScreenshots);
   };
 
-  return (
-    <div className="space-y-4">
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+  if (!screenshots.length) return null;
 
-      {screenshots.map((screenshot, index) => (
-        <div key={index} className="bg-white border rounded-lg p-4">
-          <h3 className="font-bold text-xl mb-4">Screenshot {index + 1}</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  return (
+    <div className="space-y-8">
+      {videoTitle && (
+        <h1 className="text-2xl font-bold text-gray-800">{videoTitle}</h1>
+      )}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
+        <button
+          onClick={() => setEditMode(!editMode)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          {editMode ? 'Save Changes' : 'Edit Captions'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {screenshots.map((screenshot, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="relative">
               <img 
                 src={screenshot.image} 
                 alt={`Screenshot ${index + 1}`}
-                className="w-full rounded"
+                className="w-full object-cover"
               />
-              <p className="text-sm text-gray-600 mt-2">
-                Timestamp: {formatTime(screenshot.timestamp)}
-              </p>
+              <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
+                {new Date(screenshot.timestamp * 1000).toISOString().substr(11, 8)}
+              </div>
             </div>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Caption:</h4>
+            
+            <div className="p-6 space-y-4">
+              {editMode ? (
                 <textarea
                   value={screenshot.caption || ''}
-                  onChange={(e) => updateScreenshotCaption(index, e.target.value)}
-                  className="w-full p-2 border rounded min-h-[12rem] lg:min-h-[8rem] max-h-[20rem] h-auto resize-y"
-                  placeholder="Screenshot caption..."
+                  onChange={(e) => {
+                    const updatedScreenshots = [...screenshots];
+                    updatedScreenshots[index] = {
+                      ...screenshot,
+                      caption: e.target.value
+                    };
+                    onScreenshotsUpdate(updatedScreenshots);
+                  }}
+                  className="w-full min-h-[200px] p-3 border rounded-md resize-y text-sm font-sans"
+                  placeholder="Caption text..."
                 />
+              ) : (
+                <div className="min-h-[200px] max-h-[400px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm font-sans">
+                    {screenshot.caption}
+                  </pre>
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <textarea
+                  value={screenshot.notes || ''}
+                  onChange={(e) => {
+                    const updatedScreenshots = [...screenshots];
+                    updatedScreenshots[index] = {
+                      ...screenshot,
+                      notes: e.target.value
+                    };
+                    onScreenshotsUpdate(updatedScreenshots);
+                  }}
+                  placeholder="Add notes..."
+                  className="w-full min-h-[100px] p-3 border rounded-md resize-y"
+                />
+                
                 <button
                   onClick={() => regenerateCaption(index)}
-                  disabled={processingScreenshot}
-                  className="mt-2 text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-md"
                 >
                   Regenerate Caption
                 </button>
               </div>
-              <div>
-                <div className="flex justify-between items-center">
-                  <button
-                    onClick={() => toggleNotes(index)}
-                    className="text-indigo-600 hover:text-indigo-800 font-medium"
-                  >
-                    {visibleNotes[index] ? 'Hide Notes' : 'Add Notes'}
-                  </button>
-                </div>
-                {visibleNotes[index] && (
-                  <textarea
-                    value={screenshot.notes || ''}
-                    onChange={(e) => updateScreenshotNotes(index, e.target.value)}
-                    placeholder="Add notes for this screenshot..."
-                    className="w-full p-2 border rounded h-32 mt-2"
-                  />
-                )}
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Context:</h4>
-                <p className="text-sm text-gray-700 italic">
-                  {screenshot.transcriptContext}
-                </p>
-              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

@@ -5,6 +5,7 @@ import ScreenshotManager from './components/ScreenshotManager';
 import TranscriptViewer from './components/TranscriptViewer';
 import NotesManager from './components/NotesManager';
 import ScreenshotGallery from './components/ScreenshotGallery';
+import VideoInfoViewer from './components/VideoInfoViewer';
 import { API_BASE_URL } from './config';
 
 // Print styles
@@ -56,6 +57,7 @@ const App = () => {
   const [eraseFiles, setEraseFiles] = useState(() => 
     localStorage.getItem('eraseFilesOnClear') === 'true'
   );
+  const [videoInfo, setVideoInfo] = useState(null);
 
   // Save erase files preference to localStorage
   useEffect(() => {
@@ -95,6 +97,7 @@ const App = () => {
     setLoading(true);
     setError('');
     setScreenshots([]);
+    setVideoInfo(null);
     
     try {
       const id = extractVideoId(videoId);
@@ -103,11 +106,17 @@ const App = () => {
           player.loadVideoById(id);
         }
 
-        const response = await axios.get(`${API_BASE_URL}/api/transcript/${id}`);
-        setTranscript(response.data.transcript);
+        // Fetch transcript and video info in parallel
+        const [transcriptResponse, videoInfoResponse] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/transcript/${id}`),
+          axios.get(`${API_BASE_URL}/api/video-info/${id}`)
+        ]);
+
+        setTranscript(transcriptResponse.data.transcript);
+        setVideoInfo(videoInfoResponse.data);
       }
     } catch (error) {
-      setError('Error loading video or transcript: ' + error.message);
+      setError('Error loading video: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -301,13 +310,13 @@ const App = () => {
                 Clear Outline
               </button>
             </div>
-            <div className={`prose max-w-none whitespace-pre-wrap ${
-              !isPrinting ? 'max-h-[50vh] overflow-y-auto' : ''
-            }`}>
+            <div className="prose max-w-none whitespace-pre-wrap">
               {transcriptAnalysis}
             </div>
           </div>
         )}
+
+        <VideoInfoViewer videoInfo={videoInfo} />
       </div>
     </div>
   );

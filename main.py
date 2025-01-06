@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict
 import base64
 import json
 import os
@@ -11,6 +11,10 @@ from playwright.async_api import async_playwright
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from transcript_retriever import EnhancedTranscriptRetriever
+import yt_dlp
+import re
+from urllib.parse import urlparse
+from dataclasses import dataclass
 
 # Load environment variables
 load_dotenv()
@@ -36,6 +40,52 @@ DATA_DIR = Path('data')
 DATA_DIR.mkdir(exist_ok=True)
 SCREENSHOTS_DIR = DATA_DIR / 'screenshots'
 SCREENSHOTS_DIR.mkdir(exist_ok=True)
+
+@dataclass
+class VideoInfo:
+    """Class to store video information in a structured format"""
+    title: str
+    description: str
+    chapters: List[Dict[str, str]]
+    links: List[str]
+
+def is_valid_youtube_url(url: str) -> bool:
+    """Validate if the provided URL is a valid YouTube URL."""
+    parsed = urlparse(url)
+    return bool(parsed.netloc) and parsed.netloc.endswith(('youtube.com', 'youtu.be'))
+
+def extract_links_from_description(description: str) -> List[str]:
+    """Extract all URLs from the video description using regex."""
+    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    return re.findall(url_pattern, description)
+
+def get_video_info(url: str) -> Optional[VideoInfo]:
+    """Extract information from a YouTube video including chapters, description, and links."""
+    if not is_valid_youtube_url(url):
+        raise ValueError("Invalid YouTube URL provided")
+
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            chapters = info.get('chapters', [])
+            description = info.get('description', '')
+            links = extract_links_from_description(description)
+            
+            return VideoInfo(
+                title=info.get('title', ''),
+                description=description,
+                chapters=chapters,
+                links=links
+            )
+    except Exception as e:
+        print(f"Error extracting video information: {str(e)}")
+        return None
 
 class VideoRequest(BaseModel):
     video_id: str
@@ -301,10 +351,12 @@ async def analyze_transcript(request: TranscriptAnalysisRequest):
             messages=[{
                 "role": "user",
                 "content": f"""Analyze this video transcript and provide:
-                1. A high-level summary of the main topics 
+                1. A high-level summary of the main topics in bullet points
                 2. Key points and takeaways, comprehensive (bullet points)
-                3. Any important technical terms or concepts mentioned
-                4. Suggested sections/timestamps for review
+                3. Any important technical terms or concepts mentioned, with accopmanying definitions and context. "Term/Concept: Definition. Context of its mention.
+                4. Suggested sections/timestamps for review and bullet point rationale for this recommendation. 
+                - Review your output before finalizing to ensure you have followed these instructions exactly.
+                - Generate a title for the video and begin your output with the title in bold
 
                 Transcript:
                 {request.transcript}
@@ -352,6 +404,31 @@ Answer:"""
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/video-info/{video_id}")
+async def get_video_information(video_id: str):
+    """Get detailed information about a YouTube video"""
+    try:
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        video_info = get_video_info(video_url)
+        
+        if video_info:
+            return {
+                "title": video_info.title,
+                "description": video_info.description,
+                "chapters": video_info.chapters,
+                "links": video_info.links
+            }
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Could not retrieve video information"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting video information: {str(e)}"
+        )
 
 if __name__ == "__main__":
     import uvicorn

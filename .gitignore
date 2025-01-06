@@ -1,10 +1,11 @@
 # Environment variables
 .env
+PythonExamples/
 
 #data folder
 data/
-
-
+archived/
+app/__pycache__
 
 #files:
 main - screenshot working.py

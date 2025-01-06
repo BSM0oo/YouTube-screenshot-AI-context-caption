@@ -7,7 +7,9 @@ const NotesManager = ({
   notes,
   onNotesChange,
   screenshots,
-  transcriptAnalysis
+  transcriptAnalysis,
+  transcript, // Add transcript prop
+  videoTitle  // Add videoTitle prop
 }) => {
   const [showNotes, setShowNotes] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -24,6 +26,57 @@ const NotesManager = ({
       window.print();
       setIsPrinting(false);
     }, 100);
+  };
+
+  const exportMarkdown = () => {
+    try {
+      // Add video title at the top
+      let markdownContent = `# ${videoTitle || 'Untitled Video'}\n\n`;
+      
+      markdownContent += '# Video Notes:\n\n';
+      markdownContent += notes + '\n\n';
+
+      // Add screenshots section if there are screenshots
+      if (screenshots.length > 0) {
+        markdownContent += '## Screenshots\n\n';
+        screenshots.forEach((screenshot, index) => {
+          markdownContent += `### Screenshot ${index + 1} - ${formatTime(screenshot.timestamp)}\n\n`;
+          markdownContent += `![Screenshot ${index + 1}](${screenshot.image})\n\n`;
+          markdownContent += '#### Caption:\n' + screenshot.caption + '\n\n';
+          if (screenshot.notes) {
+            markdownContent += '#### Notes:\n' + screenshot.notes + '\n\n';
+          }
+        });
+      }
+
+      // Add transcript analysis if it exists
+      if (transcriptAnalysis) {
+        markdownContent += '## Transcript Analysis\n\n';
+        markdownContent += transcriptAnalysis + '\n\n';
+      }
+
+      // Add full transcript at the end
+      markdownContent += '## Full Transcript\n\n';
+      if (transcript && transcript.length > 0) {
+        markdownContent += transcript
+          .map(item => `[${formatTime(item.start)}] ${item.text}`)
+          .join('\n\n');
+      }
+
+      // Create and trigger download
+      const blob = new Blob([markdownContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${videoTitle || 'video'}_notes.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Error exporting notes');
+    }
   };
 
   const exportNotes = async (format = 'markdown') => {
@@ -138,7 +191,7 @@ const NotesManager = ({
           />
           <div className="flex flex-col sm:flex-row gap-2 mt-4">
             <button
-              onClick={() => exportNotes('markdown')}
+              onClick={() => exportMarkdown()}
               className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
             >
               Export as Markdown
