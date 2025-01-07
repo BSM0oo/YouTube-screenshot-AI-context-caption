@@ -6,9 +6,9 @@ import TranscriptViewer from './components/TranscriptViewer';
 import NotesManager from './components/NotesManager';
 import ScreenshotGallery from './components/ScreenshotGallery';
 import VideoInfoViewer from './components/VideoInfoViewer';
+import FullTranscriptViewer from './components/FullTranscriptViewer';
 import { API_BASE_URL } from './config';
 
-// Print styles
 const printStyles = `
   @media print {
     .main-content {
@@ -59,12 +59,10 @@ const App = () => {
   );
   const [videoInfo, setVideoInfo] = useState(null);
 
-  // Save erase files preference to localStorage
   useEffect(() => {
     localStorage.setItem('eraseFilesOnClear', eraseFiles);
   }, [eraseFiles]);
 
-  // Add print styles
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = printStyles;
@@ -72,7 +70,6 @@ const App = () => {
     return () => document.head.removeChild(style);
   }, []);
 
-  // Update video time
   useEffect(() => {
     if (player) {
       const interval = setInterval(() => {
@@ -106,7 +103,6 @@ const App = () => {
           player.loadVideoById(id);
         }
 
-        // Fetch transcript and video info in parallel
         const [transcriptResponse, videoInfoResponse] = await Promise.all([
           axios.get(`${API_BASE_URL}/api/transcript/${id}`),
           axios.get(`${API_BASE_URL}/api/video-info/${id}`)
@@ -139,27 +135,38 @@ const App = () => {
     }
   };
 
-  return (
+    return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div className="flex justify-between items-center mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={eraseFiles}
-                onChange={(e) => setEraseFiles(e.target.checked)}
-                className="form-checkbox h-4 w-4 text-blue-600"
-              />
-              <span className="text-sm text-gray-600">Erase local files on clear</span>
-            </label>
-            <button
-              onClick={clearStoredData}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-            >
-              Clear All Data
-            </button>
+        <div className="flex flex-col mb-4 sm:mb-8">
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col">
+              <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
+              {videoInfo?.title && (
+                <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
+                    {videoInfo.title}
+                  </h2>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={eraseFiles}
+                  onChange={(e) => setEraseFiles(e.target.checked)}
+                  className="form-checkbox h-4 w-4 text-blue-600"
+                />
+                <span className="text-sm text-gray-600">Erase local files on clear</span>
+              </label>
+              <button
+                onClick={clearStoredData}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              >
+                Clear All Data
+              </button>
+            </div>
           </div>
         </div>
 
@@ -232,12 +239,17 @@ const App = () => {
           </div>
 
           <div className="space-y-4">
+            // Find the NotesManager component in App.jsx and update its props:
+
             <NotesManager
               videoId={videoId}
+              videoTitle={videoInfo?.title}
+              videoDescription={videoInfo?.description}
               notes={notes}
               onNotesChange={setNotes}
               screenshots={screenshots}
               transcriptAnalysis={transcriptAnalysis}
+              transcript={transcript}
             />
 
             <div className="flex justify-between items-center mb-2">
@@ -250,11 +262,9 @@ const App = () => {
                         .map(item => `[${new Date(item.start * 1000).toISOString().substr(11, 8)}] ${item.text}`)
                         .join('\n');
                       
-                      // Try the modern clipboard API first
                       if (navigator.clipboard && window.isSecureContext) {
                         await navigator.clipboard.writeText(fullTranscript);
                       } else {
-                        // Fallback for older browsers or non-HTTPS
                         const textArea = document.createElement("textarea");
                         textArea.value = fullTranscript;
                         textArea.style.position = "fixed";
@@ -317,6 +327,8 @@ const App = () => {
         )}
 
         <VideoInfoViewer videoInfo={videoInfo} />
+        
+        <FullTranscriptViewer transcript={transcript} />
       </div>
     </div>
   );

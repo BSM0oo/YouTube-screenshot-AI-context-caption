@@ -1,5 +1,25 @@
-import React, { useState } from 'react';
+/**
+ * This is a React component called VideoInfoViewer that displays information about a video.
+ * 
+ * Features:
+ * - Takes a videoInfo prop containing video data like title, chapters, links, and description
+ * - Includes a collapsible interface (show/hide functionality) using the isVisible state
+ * 
+ * When expanded, it displays:
+ * - Video title
+ * - Chapter list with timestamps (if available)
+ * - Links found in the description (if any)
+ * - Full video description
+ * 
+ * Component features:
+ * - Clean formatting with Tailwind CSS classes
+ * - Timestamps formatted as minutes:seconds
+ * - Links that open in new tabs
+ * - Pre-formatted description text that preserves whitespace
+ */
 
+import React, { useState } from 'react';
+// 
 const VideoInfoViewer = ({ videoInfo }) => {
   const [isVisible, setIsVisible] = useState(true);
 

@@ -1,6 +1,7 @@
 # Environment variables
 .env
 PythonExamples/
+claude-generated-files
 
 #data folder
 data/
