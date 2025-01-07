@@ -2,6 +2,7 @@
 .env
 PythonExamples/
 claude-generated-files
+GITHUBNAVIGATION.md
 
 #data folder
 data/
