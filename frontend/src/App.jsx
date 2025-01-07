@@ -7,6 +7,7 @@ import NotesManager from './components/NotesManager';
 import ScreenshotGallery from './components/ScreenshotGallery';
 import VideoInfoViewer from './components/VideoInfoViewer';
 import FullTranscriptViewer from './components/FullTranscriptViewer';
+import usePersistedState from './hooks/usePersistedState';
 import { API_BASE_URL } from './config';
 
 const printStyles = `
@@ -30,6 +31,44 @@ const printStyles = `
   }
 `;
 
+const appStyles = `
+  .app-container {
+    width: 100vw;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .content-container {
+    width: 100%;
+    max-width: 100vw;
+    padding: 1rem;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 640px) {
+    .content-container {
+      max-width: 80rem;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+  }
+
+  .video-container {
+    width: 100%;
+    position: relative;
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  }
+
+  .video-container > div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+`;
+
 const clearServerState = async (eraseFiles) => {
   try {
     await axios.delete(`${API_BASE_URL}/api/state/clear?eraseFiles=${eraseFiles}`);
@@ -39,15 +78,18 @@ const clearServerState = async (eraseFiles) => {
 };
 
 const App = () => {
-  const [videoId, setVideoId] = useState('');
-  const [screenshots, setScreenshots] = useState([]);
-  const [notes, setNotes] = useState('');
-  const [transcript, setTranscript] = useState([]);
-  const [transcriptAnalysis, setTranscriptAnalysis] = useState('');
-  const [customPrompt, setCustomPrompt] = useState(
+  // State management with persistence
+  const [videoId, setVideoId] = usePersistedState('videoId', '');
+  const [screenshots, setScreenshots] = usePersistedState('screenshots', []);
+  const [notes, setNotes] = usePersistedState('notes', '');
+  const [transcript, setTranscript] = usePersistedState('transcript', []);
+  const [transcriptAnalysis, setTranscriptAnalysis] = usePersistedState('transcriptAnalysis', '');
+  const [customPrompt, setCustomPrompt] = usePersistedState('customPrompt', 
     'Based on the following transcript context...'
   );
+  const [videoInfo, setVideoInfo] = usePersistedState('videoInfo', null);
 
+  // UI state (no persistence needed)
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,18 +99,18 @@ const App = () => {
   const [eraseFiles, setEraseFiles] = useState(() => 
     localStorage.getItem('eraseFilesOnClear') === 'true'
   );
-  const [videoInfo, setVideoInfo] = useState(null);
+
+  // Add styles to head
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = printStyles + appStyles;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('eraseFilesOnClear', eraseFiles);
   }, [eraseFiles]);
-
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = printStyles;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
 
   useEffect(() => {
     if (player) {
@@ -132,25 +174,26 @@ const App = () => {
       setTranscript([]);
       setTranscriptAnalysis('');
       setCustomPrompt('Based on the following transcript context...');
+      setVideoInfo(null);
     }
   };
 
-    return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div className="flex flex-col mb-4 sm:mb-8">
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col">
+  return (
+    <div className="app-container bg-gray-50">
+      <div className="content-container">
+        <div className="flex flex-col w-full mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start w-full">
+            <div className="flex flex-col w-full sm:w-auto">
               <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
               {videoInfo?.title && (
-                <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg">
+                <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg w-full sm:w-auto">
                   <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
                     {videoInfo.title}
                   </h2>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -171,19 +214,19 @@ const App = () => {
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
             {error}
           </div>
         )}
         
-        <form onSubmit={handleVideoSubmit} className="mb-4 sm:mb-8">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+        <form onSubmit={handleVideoSubmit} className="mb-4 w-full">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={videoId}
               onChange={(e) => setVideoId(e.target.value)}
               placeholder="Enter YouTube Video URL"
-              className="flex-1 p-2 border rounded text-sm sm:text-base"
+              className="flex-1 p-2 border rounded text-sm sm:text-base w-full"
             />
             <button 
               type="submit" 
@@ -195,14 +238,27 @@ const App = () => {
           </div>
         </form>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-8">
-          <div className="space-y-4">
-            <div className="aspect-video bg-black rounded-lg overflow-hidden w-full">
-              {videoId && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+          <div className="space-y-4 w-full">
+            <div className="video-container">
+              {videoId ? (
                 <YouTubePlayer 
                   videoId={videoId}
                   onPlayerReady={handlePlayerReady}
                 />
+              ) : (
+                <div className="absolute top-0 left-0 w-full h-full bg-black flex items-center justify-center">
+                  <div className="text-red-600 flex flex-col items-center">
+                    <svg 
+                      className="w-16 h-16 mb-2" 
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                    </svg>
+                    <span className="text-white text-lg font-medium">Enter YouTube URL</span>
+                  </div>
+                </div>
               )}
             </div>
             
@@ -216,7 +272,7 @@ const App = () => {
               customPrompt={customPrompt}
             />
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <button
                 onClick={() => setShowPrompt(!showPrompt)}
                 className="text-gray-600 hover:text-gray-800"
@@ -226,7 +282,7 @@ const App = () => {
             </div>
 
             {showPrompt && (
-              <div className="bg-white rounded-lg p-4 border">
+              <div className="bg-white rounded-lg p-4 border w-full">
                 <h2 className="text-lg font-bold mb-4">Caption Generation Prompt</h2>
                 <textarea
                   value={customPrompt}
@@ -238,9 +294,7 @@ const App = () => {
             )}
           </div>
 
-          <div className="space-y-4">
-            // Find the NotesManager component in App.jsx and update its props:
-
+          <div className="space-y-4 w-full">
             <NotesManager
               videoId={videoId}
               videoTitle={videoInfo?.title}
@@ -252,7 +306,7 @@ const App = () => {
               transcript={transcript}
             />
 
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-2 w-full">
               <h2 className="text-xl font-bold">Transcript</h2>
               {transcript.length > 0 && (
                 <button
@@ -303,14 +357,16 @@ const App = () => {
           </div>
         </div>
 
-        <ScreenshotGallery
-          screenshots={screenshots}
-          onScreenshotsUpdate={setScreenshots}
-          customPrompt={customPrompt}
-        />
+        <div className="w-full mt-8">
+          <ScreenshotGallery
+            screenshots={screenshots}
+            onScreenshotsUpdate={setScreenshots}
+            customPrompt={customPrompt}
+          />
+        </div>
 
         {transcriptAnalysis && (
-          <div className="bg-white rounded-lg p-6 border mt-8">
+          <div className="bg-white rounded-lg p-6 border mt-8 w-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Generated Transcript Outline</h2>
               <button
@@ -326,9 +382,13 @@ const App = () => {
           </div>
         )}
 
-        <VideoInfoViewer videoInfo={videoInfo} />
+        <div className="w-full mt-8">
+          <VideoInfoViewer videoInfo={videoInfo} />
+        </div>
         
-        <FullTranscriptViewer transcript={transcript} />
+        <div className="w-full mt-8">
+          <FullTranscriptViewer transcript={transcript} />
+        </div>
       </div>
     </div>
   );
