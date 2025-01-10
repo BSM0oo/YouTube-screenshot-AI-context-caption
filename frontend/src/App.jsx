@@ -106,6 +106,8 @@ const App = () => {
     localStorage.getItem('eraseFilesOnClear') === 'true'
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isTranscriptVisible, setIsTranscriptVisible] = useState(true);
+  const [isMainContentVisible, setIsMainContentVisible] = useState(true);
 
   // Add styles to head
   useEffect(() => {
@@ -269,197 +271,234 @@ const App = () => {
   return (
     <div className="app-container bg-gray-50">
       <div className="content-container">
-        <div className="flex flex-col w-full mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start w-full">
-            <div className="flex flex-col w-full sm:w-auto">
-              <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
-              {videoInfo?.title && (
-                <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg w-full sm:w-auto">
-                  <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
-                    {videoInfo.title}
-                  </h2>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={eraseFiles}
-                  onChange={(e) => setEraseFiles(e.target.checked)}
-                  className="form-checkbox h-4 w-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-600">Erase local files on clear</span>
-              </label>
-              <button
-                onClick={clearStoredData}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-              >
-                Clear All Data
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleVideoSubmit} className="mb-4 w-full">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={videoId}
-                onChange={(e) => setVideoId(e.target.value)}
-                placeholder="Enter YouTube Video URL"
-                className="p-2 border rounded text-sm sm:text-base w-full"
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Load Video'}
-            </button>
-          </div>
-        </form>
-
-        {/* Main content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
-          {/* Left Column */}
-          <div className="space-y-4 flex flex-col">
-            {/* Video Container */}
-            <div className="video-container">
-              {videoId ? (
-                <YouTubePlayer 
-                  videoId={videoId}
-                  onPlayerReady={handlePlayerReady}
-                />
-              ) : (
-                <div className="absolute top-0 left-0 w-full h-full bg-black flex items-center justify-center">
-                  <div className="text-red-600 flex flex-col items-center">
-                    <svg 
-                      className="w-16 h-16 mb-2" 
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                    </svg>
-                    <span className="text-white text-lg font-medium">Enter YouTube URL</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Screenshot Controls */}
-            <div>
-              <EnhancedScreenshotManager
-                videoId={videoId}
-                player={player}
-                transcript={transcript}
-                onScreenshotsTaken={handleScreenshotsTaken}
-                customPrompt={customPrompt}
-                detectedScenes={detectedScenes}
-                onScenesDetected={setDetectedScenes}
-              />
-            </div>
-
-            <div className="flex-grow">
-              <NotesManager
-                title="Notes & Export Options"
-                showButtonText={isNotesVisible => 
-                  isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
-                }
-                videoId={videoId}
-                videoTitle={videoInfo?.title}
-                videoDescription={videoInfo?.description}
-                notes={notes}
-                onNotesChange={setNotes}
-                screenshots={screenshots}
-                transcriptAnalysis={transcriptAnalysis}
-                transcript={transcript}
-              />
-              </div>
-          </div>
-
-          {/* Right Column - Transcript */}
-          <div className="h-full">
-            {/* Transcript Controls */}
-            <div className="bg-white rounded-lg p-4 border mb-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-bold">Transcript Controls</h2>
-                  {transcript.length > 0 && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAnalysisGenerated(transcript)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                        disabled={isAnalyzing}
-                      >
-                        {isAnalyzing ? 'Generating...' : 'Generate Outline'}
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const fullTranscript = transcript
-                              .map(item => `[${new Date(item.start * 1000).toISOString().substr(11, 8)}] ${item.text}`)
-                              .join('\n');
-                            
-                            if (navigator.clipboard && window.isSecureContext) {
-                              await navigator.clipboard.writeText(fullTranscript);
-                            } else {
-                              const textArea = document.createElement("textarea");
-                              textArea.value = fullTranscript;
-                              textArea.style.position = "fixed";
-                              textArea.style.left = "-999999px";
-                              document.body.appendChild(textArea);
-                              textArea.focus();
-                              textArea.select();
-                              try {
-                                document.execCommand('copy');
-                              } catch (err) {
-                                console.error('Fallback: Oops, unable to copy', err);
-                                alert('Copy failed! Please try selecting and copying the text manually.');
-                                return;
-                              }
-                              document.body.removeChild(textArea);
-                            }
-                            alert('Transcript copied to clipboard!');
-                          } catch (err) {
-                            console.error('Failed to copy:', err);
-                            alert('Failed to copy transcript. Please try again or copy manually.');
-                          }
-                        }}
-                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
-                      >
-                        Copy Transcript
-                      </button>
+        {/* Collapsible main content */}
+        {isMainContentVisible && (
+          <>
+            <div className="flex flex-col w-full mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start w-full">
+                <div className="flex flex-col w-full sm:w-auto">
+                  <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
+                  {videoInfo?.title && (
+                    <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg w-full sm:w-auto">
+                      <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
+                        {videoInfo.title}
+                      </h2>
                     </div>
                   )}
                 </div>
-                {transcript.length > 0 && (
-                  <TranscriptPrompt onSubmit={handlePromptSubmit} />
-                )}
+                <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={eraseFiles}
+                      onChange={(e) => setEraseFiles(e.target.checked)}
+                      className="form-checkbox h-4 w-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-600">Erase local files on clear</span>
+                  </label>
+                  <button
+                    onClick={clearStoredData}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                  >
+                    Clear All Data
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Main Transcript Viewer - now freestanding */}
-            <TranscriptViewer
-              transcript={transcript}
-              currentTime={currentTime}
-              onTimeClick={(time) => player?.seekTo(time, true)}
-              onAnalysisGenerated={handleAnalysisGenerated}
-              className="bg-white rounded-lg h-[600px] overflow-auto"
-            />
-          </div>
-        </div>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleVideoSubmit} className="mb-4 w-full">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={videoId}
+                    onChange={(e) => setVideoId(e.target.value)}
+                    placeholder="Enter YouTube Video URL"
+                    className="p-2 border rounded text-sm sm:text-base w-full"
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+                  disabled={loading}
+                >
+                  {loading ? 'Loading...' : 'Load Video'}
+                </button>
+              </div>
+            </form>
 
-        {/* Screenshot Gallery and remaining components */}
+            {/* Main content grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+              {/* Left Column */}
+              <div className="space-y-4 flex flex-col">
+                {/* Video Container */}
+                <div className="video-container">
+                  {videoId ? (
+                    <YouTubePlayer 
+                      videoId={videoId}
+                      onPlayerReady={handlePlayerReady}
+                    />
+                  ) : (
+                    <div className="absolute top-0 left-0 w-full h-full bg-black flex items-center justify-center">
+                      <div className="text-red-600 flex flex-col items-center">
+                        <svg 
+                          className="w-16 h-16 mb-2" 
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                        </svg>
+                        <span className="text-white text-lg font-medium">Enter YouTube URL</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Screenshot Controls */}
+                <div>
+                  <EnhancedScreenshotManager
+                    videoId={videoId}
+                    player={player}
+                    transcript={transcript}
+                    onScreenshotsTaken={handleScreenshotsTaken}
+                    customPrompt={customPrompt}
+                    detectedScenes={detectedScenes}
+                    onScenesDetected={setDetectedScenes}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column - Transcript */}
+              <div className="h-full space-y-4">
+                {/* Transcript Controls */}
+                <div className="bg-white rounded-lg p-4 border">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-bold">Transcript Controls</h2>
+                      {transcript.length > 0 && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAnalysisGenerated(transcript)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                            disabled={isAnalyzing}
+                          >
+                            {isAnalyzing ? 'Generating...' : 'Generate Outline'}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const fullTranscript = transcript
+                                  .map(item => `[${new Date(item.start * 1000).toISOString().substr(11, 8)}] ${item.text}`)
+                                  .join('\n');
+                                
+                                if (navigator.clipboard && window.isSecureContext) {
+                                  await navigator.clipboard.writeText(fullTranscript);
+                                } else {
+                                  const textArea = document.createElement("textarea");
+                                  textArea.value = fullTranscript;
+                                  textArea.style.position = "fixed";
+                                  textArea.style.left = "-999999px";
+                                  document.body.appendChild(textArea);
+                                  textArea.focus();
+                                  textArea.select();
+                                  try {
+                                    document.execCommand('copy');
+                                  } catch (err) {
+                                    console.error('Fallback: Oops, unable to copy', err);
+                                    alert('Copy failed! Please try selecting and copying the text manually.');
+                                    return;
+                                  }
+                                  document.body.removeChild(textArea);
+                                }
+                                alert('Transcript copied to clipboard!');
+                              } catch (err) {
+                                console.error('Failed to copy:', err);
+                                alert('Failed to copy transcript. Please try again or copy manually.');
+                              }
+                            }}
+                            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+                          >
+                            Copy
+                          </button>
+                          <button
+                            onClick={() => setIsTranscriptVisible(!isTranscriptVisible)}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm"
+                          >
+                            {isTranscriptVisible ? 'Hide Transcript' : 'Show Transcript'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {transcript.length > 0 && (
+                      <TranscriptPrompt onSubmit={handlePromptSubmit} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Main Transcript Viewer */}
+                {isTranscriptVisible && (
+                  <TranscriptViewer
+                    transcript={transcript}
+                    currentTime={currentTime}
+                    onTimeClick={(time) => player?.seekTo(time, true)}
+                    onAnalysisGenerated={handleAnalysisGenerated}
+                    className="bg-white rounded-lg h-[600px] overflow-auto"
+                  />
+                )}
+
+                {/* Notes Manager - Moved here */}
+                <div className="mt-4">
+                  <NotesManager
+                    title="Notes & Export Options"
+                    showButtonText={isNotesVisible => 
+                      isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
+                    }
+                    videoId={videoId}
+                    videoTitle={videoInfo?.title}
+                    videoDescription={videoInfo?.description}
+                    notes={notes}
+                    onNotesChange={setNotes}
+                    screenshots={screenshots}
+                    transcriptAnalysis={transcriptAnalysis}
+                    transcript={transcript}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Screenshots & Notes section with collapse button */}
         <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
+            <button
+              onClick={() => setIsMainContentVisible(!isMainContentVisible)}
+              className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+            >
+              {isMainContentVisible ? (
+                <>
+                  <span>Hide Video & Transcript</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                </>
+              ) : (
+                <>
+                  <span>Show Video & Transcript</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
           <EnhancedScreenshotGallery
             screenshots={screenshots}
             onScreenshotsUpdate={setScreenshots}

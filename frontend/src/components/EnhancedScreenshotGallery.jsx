@@ -16,6 +16,7 @@ const EnhancedScreenshotGallery = ({
   const [editMode, setEditMode] = useState(false);
   const [groupByType, setGroupByType] = useState(false);
   const [expandedScreenshot, setExpandedScreenshot] = useState(null);
+  const [sortAscending, setSortAscending] = useState(true);
 
   const formatTime = (seconds) => {
     const date = new Date(seconds * 1000);
@@ -75,9 +76,18 @@ const EnhancedScreenshotGallery = ({
     onScreenshotsUpdate(updatedScreenshots);
   };
 
+  const sortScreenshots = (shots) => {
+    return [...shots].sort((a, b) => {
+      const timeA = a.timestamp || 0;
+      const timeB = b.timestamp || 0;
+      return sortAscending ? timeA - timeB : timeB - timeA;
+    });
+  };
+
   const groupScreenshotsByType = () => {
     const groups = {};
-    screenshots.forEach((screenshot, index) => {
+    const sortedShots = sortScreenshots(screenshots);
+    sortedShots.forEach((screenshot, index) => {
       const type = screenshot.type === 'prompt_response' ? 'prompt_response' : (screenshot.content_type || 'other');
       if (!groups[type]) {
         groups[type] = [];
@@ -97,18 +107,24 @@ const EnhancedScreenshotGallery = ({
         <h1 className="text-2xl font-bold text-gray-800">{videoTitle}</h1>
       )}
       
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
-        <div className="flex gap-4">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setSortAscending(!sortAscending)}
+            className="flex-1 sm:flex-none text-xs sm:text-sm border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-800 hover:text-gray-900 px-2 sm:px-3 py-1 rounded"
+          >
+            {sortAscending ? '↑ Oldest First' : '↓ Newest First'}
+          </button>
           <button
             onClick={() => setGroupByType(!groupByType)}
-            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+            className="flex-1 sm:flex-none text-xs sm:text-sm border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 px-2 sm:px-3 py-1 rounded"
           >
             {groupByType ? 'Show Chronological' : 'Group by Type'}
           </button>
           <button
             onClick={() => setEditMode(!editMode)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+            className="flex-1 sm:flex-none text-xs sm:text-sm border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 px-2 sm:px-3 py-1 rounded"
           >
             {editMode ? 'Save Changes' : 'Edit Captions'}
           </button>
@@ -158,7 +174,7 @@ const EnhancedScreenshotGallery = ({
       ) : (
         // Chronological view
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {screenshots.map((screenshot, index) => (
+          {sortScreenshots(screenshots).map((screenshot, index) => (
             screenshot.type === 'prompt_response' ? (
               <PromptResponseCard
                 key={index}
