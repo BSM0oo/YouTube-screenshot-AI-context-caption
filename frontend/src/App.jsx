@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import YouTubePlayer from './components/YouTubePlayer';
-import ScreenshotManager from './components/ScreenshotManager';
+import EnhancedScreenshotManager from './components/EnhancedScreenshotManager';
+import EnhancedScreenshotGallery from './components/EnhancedScreenshotGallery';
 import TranscriptViewer from './components/TranscriptViewer';
 import NotesManager from './components/NotesManager';
-import ScreenshotGallery from './components/ScreenshotGallery';
 import VideoInfoViewer from './components/VideoInfoViewer';
 import FullTranscriptViewer from './components/FullTranscriptViewer';
 import usePersistedState from './hooks/usePersistedState';
 import { API_BASE_URL } from './config';
+import ReactMarkdown from 'react-markdown';
+import TranscriptPrompt from './components/TranscriptPrompt';
 
 const printStyles = `
   @media print {
@@ -78,16 +80,20 @@ const clearServerState = async (eraseFiles) => {
 };
 
 const App = () => {
-  // State management with persistence
-  const [videoId, setVideoId] = usePersistedState('videoId', '');
-  const [screenshots, setScreenshots] = usePersistedState('screenshots', []);
-  const [notes, setNotes] = usePersistedState('notes', '');
-  const [transcript, setTranscript] = usePersistedState('transcript', []);
-  const [transcriptAnalysis, setTranscriptAnalysis] = usePersistedState('transcriptAnalysis', '');
-  const [customPrompt, setCustomPrompt] = usePersistedState('customPrompt', 
+  // Enhanced state management with persistence
+  const [videoId, setVideoId] = usePersistedState('yt-notes-videoId', '');
+  const [screenshots, setScreenshots] = usePersistedState('yt-notes-screenshots', []);
+  const [notes, setNotes] = usePersistedState('yt-notes-notes', '');
+  const [transcript, setTranscript] = usePersistedState('yt-notes-transcript', []);
+  const [transcriptAnalysis, setTranscriptAnalysis] = usePersistedState('yt-notes-transcriptAnalysis', '');
+  const [customPrompt, setCustomPrompt] = usePersistedState('yt-notes-customPrompt', 
     'Based on the following transcript context...'
   );
-  const [videoInfo, setVideoInfo] = usePersistedState('videoInfo', null);
+  const [videoInfo, setVideoInfo] = usePersistedState('yt-notes-videoInfo', null);
+  
+  // New state for scene detection and content organization
+  const [detectedScenes, setDetectedScenes] = usePersistedState('yt-notes-detectedScenes', []);
+  const [contentTypes, setContentTypes] = usePersistedState('yt-notes-contentTypes', new Set());
 
   // UI state (no persistence needed)
   const [player, setPlayer] = useState(null);
@@ -99,6 +105,7 @@ const App = () => {
   const [eraseFiles, setEraseFiles] = useState(() => 
     localStorage.getItem('eraseFilesOnClear') === 'true'
   );
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Add styles to head
   useEffect(() => {
@@ -131,12 +138,34 @@ const App = () => {
     return match ? match[1] : url;
   };
 
+  const handleScreenshotsTaken = (newScreenshots) => {
+    setScreenshots(prev => {
+      const updated = [...prev, ...newScreenshots].map(screenshot => ({
+        ...screenshot,
+        timestamp: Number(screenshot.timestamp),
+        image: screenshot.image,
+        caption: screenshot.caption || '',
+        notes: screenshot.notes || '',
+        transcriptContext: screenshot.transcriptContext || '',
+        content_type: screenshot.content_type || 'other'
+      }));
+      
+      // Keep only the last 50 screenshots to prevent localStorage size issues
+      if (updated.length > 50) {
+        console.warn('More than 50 screenshots, keeping only the most recent ones');
+        return updated.slice(-50);
+      }
+      return updated;
+    });
+  };
+
   const handleVideoSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setScreenshots([]);
     setVideoInfo(null);
+    setDetectedScenes([]);
+    setContentTypes(new Set());
     
     try {
       const id = extractVideoId(videoId);
@@ -164,10 +193,67 @@ const App = () => {
     setPlayer(ytPlayer);
   };
 
+  const handlePromptSubmit = async (prompt) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/query-transcript`, {
+        transcript: transcript,
+        prompt: prompt
+      });
+
+      // Add the response to screenshots array with a special type
+      const newScreenshot = {
+        timestamp: currentTime,
+        type: 'prompt_response',
+        prompt: prompt,
+        response: response.data.response,
+        createdAt: new Date().toISOString()
+      };
+
+      setScreenshots(prev => [...prev, newScreenshot]);
+      return true;
+    } catch (error) {
+      console.error('Error submitting prompt:', error);
+      setError('Failed to process prompt: ' + (error.response?.data?.detail || error.message));
+      return false;
+    }
+  };
+
+  const handleAnalysisGenerated = async (analysis) => {
+    try {
+      setIsAnalyzing(true);
+      const response = await axios.post(`${API_BASE_URL}/api/analyze-transcript`, {
+        transcript: analysis
+      });
+      setTranscriptAnalysis(response.data.analysis);
+    } catch (error) {
+      console.error('Error analyzing transcript:', error);
+      setError('Failed to analyze transcript: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const clearStoredData = async () => {
     if (confirm('Are you sure you want to clear all data?' + 
         (eraseFiles ? '\nThis will also erase local files.' : ''))) {
       await clearServerState(eraseFiles);
+      
+      // Clear all persisted state
+      const keys = [
+        'yt-notes-videoId',
+        'yt-notes-screenshots',
+        'yt-notes-notes',
+        'yt-notes-transcript',
+        'yt-notes-transcriptAnalysis',
+        'yt-notes-customPrompt',
+        'yt-notes-videoInfo',
+        'yt-notes-detectedScenes',
+        'yt-notes-contentTypes'
+      ];
+      
+      keys.forEach(key => localStorage.removeItem(key));
+      
+      // Reset state
       setVideoId('');
       setScreenshots([]);
       setNotes('');
@@ -175,6 +261,8 @@ const App = () => {
       setTranscriptAnalysis('');
       setCustomPrompt('Based on the following transcript context...');
       setVideoInfo(null);
+      setDetectedScenes([]);
+      setContentTypes(new Set());
     }
   };
 
@@ -221,13 +309,15 @@ const App = () => {
         
         <form onSubmit={handleVideoSubmit} className="mb-4 w-full">
           <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={videoId}
-              onChange={(e) => setVideoId(e.target.value)}
-              placeholder="Enter YouTube Video URL"
-              className="flex-1 p-2 border rounded text-sm sm:text-base w-full"
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={videoId}
+                onChange={(e) => setVideoId(e.target.value)}
+                placeholder="Enter YouTube Video URL"
+                className="p-2 border rounded text-sm sm:text-base w-full"
+              />
+            </div>
             <button 
               type="submit" 
               className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
@@ -238,8 +328,11 @@ const App = () => {
           </div>
         </form>
 
+        {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
-          <div className="space-y-4 w-full">
+          {/* Left Column */}
+          <div className="space-y-4 flex flex-col">
+            {/* Video Container */}
             <div className="video-container">
               {videoId ? (
                 <YouTubePlayer 
@@ -262,106 +355,117 @@ const App = () => {
               )}
             </div>
             
-            <ScreenshotManager
-              videoId={videoId}
-              player={player}
-              transcript={transcript}
-              onScreenshotsTaken={(newScreenshots) => 
-                setScreenshots(prev => [...prev, ...newScreenshots])
-              }
-              customPrompt={customPrompt}
-            />
-
-            <div className="flex items-center justify-between w-full">
-              <button
-                onClick={() => setShowPrompt(!showPrompt)}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                {showPrompt ? 'Hide Caption Prompt' : 'Show Caption Prompt'}
-              </button>
+            {/* Screenshot Controls */}
+            <div>
+              <EnhancedScreenshotManager
+                videoId={videoId}
+                player={player}
+                transcript={transcript}
+                onScreenshotsTaken={handleScreenshotsTaken}
+                customPrompt={customPrompt}
+                detectedScenes={detectedScenes}
+                onScenesDetected={setDetectedScenes}
+              />
             </div>
 
-            {showPrompt && (
-              <div className="bg-white rounded-lg p-4 border w-full">
-                <h2 className="text-lg font-bold mb-4">Caption Generation Prompt</h2>
-                <textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  className="w-full h-32 p-2 border rounded mb-2"
-                  placeholder="Enter custom prompt for caption generation..."
-                />
+            <div className="flex-grow">
+              <NotesManager
+                title="Notes & Export Options"
+                showButtonText={isNotesVisible => 
+                  isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
+                }
+                videoId={videoId}
+                videoTitle={videoInfo?.title}
+                videoDescription={videoInfo?.description}
+                notes={notes}
+                onNotesChange={setNotes}
+                screenshots={screenshots}
+                transcriptAnalysis={transcriptAnalysis}
+                transcript={transcript}
+              />
               </div>
-            )}
           </div>
 
-          <div className="space-y-4 w-full">
-            <NotesManager
-              videoId={videoId}
-              videoTitle={videoInfo?.title}
-              videoDescription={videoInfo?.description}
-              notes={notes}
-              onNotesChange={setNotes}
-              screenshots={screenshots}
-              transcriptAnalysis={transcriptAnalysis}
-              transcript={transcript}
-            />
-
-            <div className="flex justify-between items-center mb-2 w-full">
-              <h2 className="text-xl font-bold">Transcript</h2>
-              {transcript.length > 0 && (
-                <button
-                  onClick={async () => {
-                    try {
-                      const fullTranscript = transcript
-                        .map(item => `[${new Date(item.start * 1000).toISOString().substr(11, 8)}] ${item.text}`)
-                        .join('\n');
-                      
-                      if (navigator.clipboard && window.isSecureContext) {
-                        await navigator.clipboard.writeText(fullTranscript);
-                      } else {
-                        const textArea = document.createElement("textarea");
-                        textArea.value = fullTranscript;
-                        textArea.style.position = "fixed";
-                        textArea.style.left = "-999999px";
-                        document.body.appendChild(textArea);
-                        textArea.focus();
-                        textArea.select();
-                        try {
-                          document.execCommand('copy');
-                        } catch (err) {
-                          console.error('Fallback: Oops, unable to copy', err);
-                          alert('Copy failed! Please try selecting and copying the text manually.');
-                          return;
-                        }
-                        document.body.removeChild(textArea);
-                      }
-                      alert('Transcript copied to clipboard!');
-                    } catch (err) {
-                      console.error('Failed to copy:', err);
-                      alert('Failed to copy transcript. Please try again or copy manually.');
-                    }
-                  }}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Copy Transcript
-                </button>
-              )}
+          {/* Right Column - Transcript */}
+          <div className="h-full">
+            {/* Transcript Controls */}
+            <div className="bg-white rounded-lg p-4 border mb-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold">Transcript Controls</h2>
+                  {transcript.length > 0 && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAnalysisGenerated(transcript)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                        disabled={isAnalyzing}
+                      >
+                        {isAnalyzing ? 'Generating...' : 'Generate Outline'}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const fullTranscript = transcript
+                              .map(item => `[${new Date(item.start * 1000).toISOString().substr(11, 8)}] ${item.text}`)
+                              .join('\n');
+                            
+                            if (navigator.clipboard && window.isSecureContext) {
+                              await navigator.clipboard.writeText(fullTranscript);
+                            } else {
+                              const textArea = document.createElement("textarea");
+                              textArea.value = fullTranscript;
+                              textArea.style.position = "fixed";
+                              textArea.style.left = "-999999px";
+                              document.body.appendChild(textArea);
+                              textArea.focus();
+                              textArea.select();
+                              try {
+                                document.execCommand('copy');
+                              } catch (err) {
+                                console.error('Fallback: Oops, unable to copy', err);
+                                alert('Copy failed! Please try selecting and copying the text manually.');
+                                return;
+                              }
+                              document.body.removeChild(textArea);
+                            }
+                            alert('Transcript copied to clipboard!');
+                          } catch (err) {
+                            console.error('Failed to copy:', err);
+                            alert('Failed to copy transcript. Please try again or copy manually.');
+                          }
+                        }}
+                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+                      >
+                        Copy Transcript
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {transcript.length > 0 && (
+                  <TranscriptPrompt onSubmit={handlePromptSubmit} />
+                )}
+              </div>
             </div>
 
+            {/* Main Transcript Viewer - now freestanding */}
             <TranscriptViewer
               transcript={transcript}
               currentTime={currentTime}
               onTimeClick={(time) => player?.seekTo(time, true)}
-              onAnalysisGenerated={setTranscriptAnalysis}
+              onAnalysisGenerated={handleAnalysisGenerated}
+              className="bg-white rounded-lg h-[600px] overflow-auto"
             />
           </div>
         </div>
 
-        <div className="w-full mt-8">
-          <ScreenshotGallery
+        {/* Screenshot Gallery and remaining components */}
+        <div className="mt-8">
+          <EnhancedScreenshotGallery
             screenshots={screenshots}
             onScreenshotsUpdate={setScreenshots}
             customPrompt={customPrompt}
+            videoTitle={videoInfo?.title}
+            transcript={transcript}
           />
         </div>
 
@@ -376,8 +480,28 @@ const App = () => {
                 Clear Outline
               </button>
             </div>
-            <div className="prose max-w-none whitespace-pre-wrap">
-              {transcriptAnalysis}
+            <div className="prose prose-lg max-w-none">
+              <ReactMarkdown
+                components={{
+                  ul: ({node, ...props}) => (
+                    <ul className="list-disc pl-4 space-y-1 mb-4" {...props} />
+                  ),
+                  li: ({node, ...props}) => (
+                    <li className="ml-4" {...props} />
+                  ),
+                  h2: ({node, ...props}) => (
+                    <h2 className="text-lg font-bold mt-4 mb-2" {...props} />
+                  ),
+                  p: ({node, ...props}) => (
+                    <p className="mb-4" {...props} />
+                  ),
+                  strong: ({node, ...props}) => (
+                    <strong className="font-bold" {...props} />
+                  )
+                }}
+              >
+                {transcriptAnalysis}
+              </ReactMarkdown>
             </div>
           </div>
         )}

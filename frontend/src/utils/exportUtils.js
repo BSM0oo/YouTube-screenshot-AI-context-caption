@@ -36,11 +36,69 @@ const generateTranscript = (transcript, isHTML) => {
     return isHTML
       ? `<span class="timestamp">${timestamp}</span> <span class="transcript-text">${item.text}</span>`
       : `${timestamp} ${item.text}`;
-  }).join(' ');  // Join with space instead of newline
+  }).join(' ');
 
   return isHTML
     ? `<div class="transcript-content">${formattedTranscript}</div>`
     : formattedTranscript;
+};
+
+const formatScreenshotContent = (screenshot, index, isHTML) => {
+  // Handle prompt response type screenshots
+  if (screenshot.type === 'prompt_response') {
+    const content = [
+      `Time: ${formatTime(screenshot.timestamp)}`,
+      'Query:',
+      screenshot.prompt,
+      'Response:',
+      screenshot.response
+    ];
+
+    if (isHTML) {
+      return `
+        <div class="prompt-response">
+          <div class="time">${formatTime(screenshot.timestamp)}</div>
+          <div class="query">
+            <strong>Query:</strong>
+            <p>${screenshot.prompt}</p>
+          </div>
+          <div class="response">
+            <strong>Response:</strong>
+            <div class="markdown-content">${screenshot.response}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    return content.join('\n\n');
+  }
+
+  // Handle regular screenshots
+  const screenshotContent = [
+    isHTML 
+      ? `<img src="${screenshot.image}" alt="Screenshot ${index + 1}" class="screenshot-image">` 
+      : `![Screenshot ${index + 1}](${screenshot.image})`,
+  ];
+
+  if (screenshot.caption) {
+    const captionContent = isHTML 
+      ? `<div class="screenshot-caption">
+          <ul>
+            ${screenshot.caption.split('\n')
+              .map(line => line.trim())
+              .filter(line => line)
+              .map(line => `<li>${line}</li>`)
+              .join('\n')}
+          </ul>
+        </div>`
+      : screenshot.caption;
+
+    screenshotContent.push(captionContent);
+  }
+
+  return isHTML
+    ? `<div class="screenshot-container">${screenshotContent.join('\n')}</div>`
+    : screenshotContent.join('\n\n');
 };
 
 export const generateExportContent = ({
@@ -98,22 +156,7 @@ export const generateExportContent = ({
   if (screenshots?.length) {
     content.push(h2('Screenshots and Annotations'));
     screenshots.forEach((screenshot, index) => {
-      const screenshotContent = [
-        isHTML 
-          ? `<img src="${screenshot.image}" alt="Screenshot ${index + 1}" class="screenshot-image">` 
-          : `![Screenshot ${index + 1}](${screenshot.image})`,
-        
-        '<div class="screenshot-caption">',
-        '<ul>',
-        ...screenshot.caption.split('\n')
-          .map(line => line.trim())
-          .filter(line => line)
-          .map(line => `<li>${line}</li>`),
-        '</ul>',
-        '</div>'
-      ].join('\n');
-
-      content.push(section(screenshotContent, 'screenshot-container'));
+      content.push(formatScreenshotContent(screenshot, index, isHTML));
     });
   }
 
@@ -156,9 +199,15 @@ export const generateExportContent = ({
           .transcript-content { display: inline; white-space: normal; }
           .timestamp { font-family: ui-monospace, monospace; color: #555; display: inline; margin-right: 0.25rem; }
           .transcript-text { display: inline; margin-right: 0.5rem; }
+          .prompt-response { margin: 2rem 0; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; }
+          .prompt-response .time { color: #666; font-family: monospace; margin-bottom: 1rem; }
+          .prompt-response .query { margin-bottom: 1rem; }
+          .prompt-response .response { margin-top: 1rem; }
+          .markdown-content ul { margin-left: 1.5rem; list-style-type: disc; }
           @media print {
             body { font-family: "Times New Roman", serif; }
             .export-container { padding: 0; }
+            .prompt-response { break-inside: avoid; }
           }
         </style>
         <link rel="stylesheet" href="export-styles.css">

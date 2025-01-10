@@ -12,3 +12,8 @@ numpy>=1.24.0
 python-multipart>=0.0.6
 aiofiles>=0.8.0
 yt-dlp>=2023.0.0
+tesseract
+opencv-python
+pytesseract
+Pillow
+#brew install tesseract

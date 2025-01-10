@@ -1,8 +1,5 @@
 # YouTube Notes App
 
-A web application for taking structured notes while watching YouTube videos, with features for capturing screenshots, generating AI-powered captions, and creating comprehensive study materials.
-# YouTube Notes App
-
 A professional web application for taking structured notes while watching YouTube videos. Features include screenshot capture, AI-powered captions, comprehensive transcript analysis, and polished export options for creating study materials and documentation.
 
 ## Project Structure
@@ -13,10 +10,10 @@ youtube-notes-app/
 │   ├── src/
 │   │   ├── components/     # React components
 │   │   │   ├── YouTubePlayer.jsx      # Video player component
-│   │   │   ├── ScreenshotManager.jsx  # Screenshot capture handling
+│   │   │   ├── EnhancedScreenshotManager.jsx  # Screenshot capture handling
 │   │   │   ├── TranscriptViewer.jsx   # Transcript display and navigation
 │   │   │   ├── NotesManager.jsx       # Notes and export management
-│   │   │   ├── ScreenshotGallery.jsx  # Screenshot display and organization
+│   │   │   ├── EnhancedScreenshotGallery.jsx  # Screenshot display and organization
 │   │   │   ├── VideoInfoViewer.jsx    # Video metadata display
 │   │   │   └── FullTranscriptViewer.jsx # Full transcript display
 │   │   ├── styles/        # Styling
@@ -33,7 +30,71 @@ youtube-notes-app/
 
 ## Features - see below for more info on files
 
+
 ## Improvements roadmap and prompts:
+1/9/25:
+
+
+1/8/25:
+Add a box for interacting with the anthropic API with the entire transcript used as context. so the user can ask for specific questions to be answered about the transcript content, and those answers will then populate in the grid just like the new screenshot boxes do.
+
+Adding a new feature: Think about how to Add a box for interacting with the anthropic API with the entire transcript used as context. so the user can ask for specific questions to be answered about the transcript content, and those answers will then populate in the grid just like the new screenshot boxes do. 
+
+"Ask a question about this video!"
+
+User asks for example:  "What types of grips are used for the golf swing?"
+
+Output goes into the grid alongside the screenshots, rich formatting, and nice looking card. 
+
+If video contains information on it, it cites an approximate time stamp in the video (future feature - dont implement yet)
+
+If going to use information outside the transcript, it prompts the user to say ok (future feature - dont implement yet)
+
+1/8/25:
+add a button that expands the size of the video player to fill the screen horizontally (and increases to whatever proportionate height that is.). Same button should also reverse it.
+
+1/8/25:
+The video information box has rich formatting with headings displayed appropriately etc. - the Generated transcript outline box does not. I think its b/c the generated transcript outline box is markdown that hasn't been rendered.
+
+
+
+
+### Ideas:
+**Enhanced Screenshot and Caption System:**
+Implement topic-based contextual analysis for better captions
+Add hierarchical caption structure (main topic → subtopics → details)
+Allow manual editing/refinement of AI-generated captions
+Generate topic headings based on transcript context before and after screenshot
+Option to group related screenshots under common topics
+
+**Automatic Scene and Content Detection:** 
+Scene change detection using computer vision
+Text detection in video frames (OCR)
+Whiteboard/slide detection
+Graph/chart detection
+Auto-screenshot options:
+
+Scene changes
+Text appearances
+Presentation slides
+Key visual elements (diagrams, charts)
+
+
+Preview strip showing detected scenes/content
+
+what are some ideas for features and improvements for this app? 
+
+Some general thoughts from me: 
+
+1) Sometimes it provides captions of the screenshots that aren't so useful and need more context and a unifying topic heading (analogous to a slide title). 
+
+Maybe expanding the context and focusing on the topic that's fully captured in the context would be best (for example if it contains all of topic B and a little of topic A and C, it should caption a headline indicating topic B and the three bullet points explaining it. 
+
+2) It would also be cool if it user could click a button to have it automatically generate screenshots in parts of videos with a scene change or where there was a change in topic. 
+
+3) it would also be cool to screenshot any parts of video with text if the user clicks a button to have it do this. So if i was watching a video and saw some text pop up in a few scenes, i'd click the button and it would screenshot all the parts of video with differnt text. 
+
+### Completed:
 ** 1/6/25 ** :
 DONE -Use VideoInfoViewer.jsx to get the title of the video and then display the title 
 

@@ -1,8 +1,11 @@
 # Environment variables
 .env
+
+#other files and folders
 PythonExamples/
 claude-generated-files
 GITHUBNAVIGATION.md
+youtube-notes-app-clean-Claude121724.code-workspace
 
 #data folder
 data/
