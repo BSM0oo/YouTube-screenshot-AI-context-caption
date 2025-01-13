@@ -23,6 +23,11 @@ const EnhancedScreenshotGallery = ({
     return date.toISOString().substr(11, 8);
   };
 
+  const deleteScreenshot = (index) => {
+    const updatedScreenshots = screenshots.filter((_, i) => i !== index);
+    onScreenshotsUpdate(updatedScreenshots);
+  };
+
   const regenerateCaption = async (index) => {
     try {
       setProcessingScreenshot(true);
@@ -161,6 +166,7 @@ const EnhancedScreenshotGallery = ({
                     onUpdateNotes={updateScreenshotNotes}
                     onUpdateCaption={updateScreenshotCaption}
                     onRegenerateCaption={regenerateCaption}
+                    onDeleteScreenshot={deleteScreenshot}
                     expanded={expandedScreenshot === originalIndex}
                     onToggleExpand={() => setExpandedScreenshot(
                       expandedScreenshot === originalIndex ? null : originalIndex
@@ -192,6 +198,7 @@ const EnhancedScreenshotGallery = ({
                 onUpdateNotes={updateScreenshotNotes}
                 onUpdateCaption={updateScreenshotCaption}
                 onRegenerateCaption={regenerateCaption}
+                onDeleteScreenshot={deleteScreenshot}
                 expanded={expandedScreenshot === index}
                 onToggleExpand={() => setExpandedScreenshot(
                   expandedScreenshot === index ? null : index
@@ -288,11 +295,12 @@ const ScreenshotCard = ({
   onUpdateNotes,
   onUpdateCaption,
   onRegenerateCaption,
+  onDeleteScreenshot,
   expanded,
   onToggleExpand
 }) => {
   const [showNotes, setShowNotes] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false); // Default to showing transcript
+  const [showTranscript, setShowTranscript] = useState(false); // Changed to false by default
 
   const parseStructuredCaption = (caption) => {
     try {
@@ -394,6 +402,16 @@ const ScreenshotCard = ({
             className="text-gray-600 hover:text-gray-800"
           >
             Regenerate Caption
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm('Are you sure you want to delete this screenshot?')) {
+                onDeleteScreenshot(index);
+              }
+            }}
+            className="text-red-600 hover:text-red-800"
+          >
+            Delete
           </button>
         </div>
 

@@ -2,6 +2,10 @@
 
 A professional web application for taking structured notes while watching YouTube videos. Features include screenshot capture, AI-powered captions, comprehensive transcript analysis, and polished export options for creating study materials and documentation.
 
+## to test locally we added static folder and from root directory u can use:
+uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+(python main.py i think)
+
 ### Docker Instructions:
 Terminal:
 docker exec -it <container_id> ls -la /app/static
