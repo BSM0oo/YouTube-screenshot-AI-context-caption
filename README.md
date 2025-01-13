@@ -7,6 +7,9 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 (python main.py i think)
 
 ### Docker Instructions:
+
+**Start with:** docker build --platform linux/amd64 -t youtube-notes-app .
+
 Terminal:
 docker exec -it <container_id> ls -la /app/static
 
