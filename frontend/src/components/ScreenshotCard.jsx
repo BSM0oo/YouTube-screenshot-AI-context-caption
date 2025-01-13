@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getContentTypeIcon } from '../utils/iconUtils.jsx';
 
 const ScreenshotCard = ({
   screenshot,
@@ -12,7 +13,7 @@ const ScreenshotCard = ({
   onToggleExpand
 }) => {
   const [showNotes, setShowNotes] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false); // Default to hidden
 
   const parseStructuredCaption = (caption) => {
     try {
@@ -54,6 +55,11 @@ const ScreenshotCard = ({
         <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
           {new Date(screenshot.timestamp * 1000).toISOString().substr(11, 8)}
         </div>
+        {screenshot.content_type && (
+          <div className="absolute top-2 left-2">
+            {getContentTypeIcon(screenshot.content_type)}
+          </div>
+        )}
       </div>
       
       <div className="p-6 space-y-4">
