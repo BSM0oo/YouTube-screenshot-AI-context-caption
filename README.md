@@ -2,6 +2,58 @@
 
 A professional web application for taking structured notes while watching YouTube videos. Features include screenshot capture, AI-powered captions, comprehensive transcript analysis, and polished export options for creating study materials and documentation.
 
+### Docker Instructions:
+Terminal:
+docker exec -it <container_id> ls -la /app/static
+
+Docker build:
+docker build -t youtube-notes-app .
+
+Docker Run:
+docker run -p 8000:8000 youtube-notes-app
+
+# Docker commands (u can do as script if u want)
+## create your app service accounts and give them privileges:
+# Create a service account for Cloud Run
+gcloud iam service-accounts create youtube-notes-app-sa \
+    --display-name="YouTube Notes App Service Account"
+
+# Grant necessary roles
+gcloud projects add-iam-policy-binding webapps-426717 \
+    --member="serviceAccount:youtube-notes-app-sa@webapps-426717.iam.gserviceaccount.com" \
+    --role="roles/run.invoker"
+
+# Navigate to your project directory
+cd '/Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud'
+
+# Submit the build to Cloud Build
+gcloud builds submit --tag gcr.io/webapps-426717/youtube-notes-app
+
+# Deploy to Cloud Run
+gcloud run deploy youtube-notes-app \
+  --image gcr.io/webapps-426717/youtube-notes-app \
+  --platform managed \
+  --region us-central1 \
+  --project webapps-426717 \
+  --allow-unauthenticated \
+  --memory 512Mi \
+  --cpu 1 \
+  --min-instances 0 \
+  --max-instances 1
+
+# after deployment monitor your app:
+After deployment:
+
+Monitor your application:
+bashCopy# View logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=youtube-notes-app" --limit 50
+
+Check service status:
+bashCopygcloud run services describe youtube-notes-app --region us-central1
+
+View URL and other details:
+bashCopygcloud run services list
+
 ## Project Structure
 
 ```
@@ -32,7 +84,9 @@ youtube-notes-app/
 
 
 ## Improvements roadmap and prompts:
-1/9/25:
+1/12/25:
+- Add ability to delete cards from the screenshot gallery
+- 
 
 
 1/8/25:

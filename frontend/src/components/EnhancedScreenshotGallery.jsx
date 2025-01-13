@@ -292,7 +292,7 @@ const ScreenshotCard = ({
   onToggleExpand
 }) => {
   const [showNotes, setShowNotes] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(true); // Default to showing transcript
+  const [showTranscript, setShowTranscript] = useState(false); // Default to showing transcript
 
   const parseStructuredCaption = (caption) => {
     try {

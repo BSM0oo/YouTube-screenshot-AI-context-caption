@@ -16,4 +16,5 @@ tesseract
 opencv-python
 pytesseract
 Pillow
+playwright
 #brew install tesseract

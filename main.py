@@ -21,6 +21,11 @@ from PIL import Image
 import pytesseract
 import io
 import traceback
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+from pathlib import Path
 
 
 # Load environment variables
@@ -47,6 +52,8 @@ DATA_DIR = Path('data')
 DATA_DIR.mkdir(exist_ok=True)
 SCREENSHOTS_DIR = DATA_DIR / 'screenshots'
 SCREENSHOTS_DIR.mkdir(exist_ok=True)
+STATIC_DIR = Path(__file__).parent / "static"
+
 
 @dataclass
 class VideoInfo:
@@ -609,7 +616,7 @@ Transcript:
 
 Provide your response following these exact rules:
 
-1. Write from a first-person perspective as if you are the author/speaker in the transcript
+1. Avoid using introductory statements or phrases like "The video shows...", "In this screenshot...", "The speaker explains..." Generate response as if you are the author of the transcript but don't refer to yourself in the first person. 
 2. Never refer to "the video", "the transcript", or use phrases like "they mention" or "the speaker explains"
 3. Format timestamps like this: [HH:MM:SS]
 4. Only add timestamps in parentheses at the end of key points
@@ -751,6 +758,48 @@ Follow these rules at all costs.
         print(f"Caption error: {str(e)}")
         traceback.print_exc()  # Add full traceback
         raise HTTPException(status_code=500, detail=str(e))
+
+# Add this near the top of main.py
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    logger.info(f"Received request for path: {full_path}")
+    
+    # Skip API routes
+    if full_path.startswith("api/"):
+        logger.info("Skipping API route")
+        raise HTTPException(status_code=404)
+    
+    # Handle root path
+    if not full_path or full_path == "/":
+        index_path = STATIC_DIR / "index.html"
+        logger.info(f"Serving root index.html from {index_path}")
+        if index_path.exists():
+            return FileResponse(index_path)
+    
+    # Check for static files
+    static_file = STATIC_DIR / full_path
+    if static_file.exists() and static_file.is_file():
+        logger.info(f"Serving static file: {static_file}")
+        return FileResponse(static_file)
+    
+    # Fallback to index.html for client-side routing
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        logger.info("Falling back to index.html")
+        return FileResponse(index_path)
+        
+    # If we get here, something is wrong
+    logger.error("Could not find index.html")
+    raise HTTPException(status_code=404, detail="Not found")
+
+# Keep at the bottom of your file
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
