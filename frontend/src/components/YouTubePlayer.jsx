@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const YouTubePlayer = ({ videoId, onPlayerReady }) => {
   const playerRef = useRef(null);
+  const containerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -17,12 +18,34 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
       initPlayer();
     }
 
+    // Add keyboard event listener
+    const handleKeyDown = (e) => {
+      if (!playerRef.current || !isReady) return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          const currentTime = playerRef.current.getCurrentTime();
+          playerRef.current.seekTo(Math.max(0, currentTime - 10), true);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          const currentTime2 = playerRef.current.getCurrentTime();
+          const duration = playerRef.current.getDuration();
+          playerRef.current.seekTo(Math.min(duration, currentTime2 + 10), true);
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      document.removeEventListener('keydown', handleKeyDown);
       if (playerRef.current) {
         playerRef.current.destroy();
       }
     };
-  }, [videoId]);
+  }, [videoId, isReady]);
 
   const initPlayer = () => {
     if (!videoId) return;
@@ -32,7 +55,7 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
       playerVars: {
         autoplay: 0,
         controls: 1,
-        rel: 0,
+        rel: 0, // This prevents related videos from showing
         origin: window.location.origin,
         enablejsapi: 1
       },
@@ -47,8 +70,27 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
     });
   };
 
+  // Function to handle screenshots (this should be called from your screenshot logic)
+  const prepareForScreenshot = () => {
+    if (!containerRef.current) return;
+    
+    // Hide any "more videos" elements before screenshot
+    const relatedVideos = containerRef.current.querySelector('[aria-label="Related videos"]');
+    if (relatedVideos) {
+      relatedVideos.style.display = 'none';
+    }
+    
+    // Return a cleanup function
+    return () => {
+      if (relatedVideos) {
+        relatedVideos.style.display = '';
+      }
+    };
+  };
+
   return (
     <div 
+      ref={containerRef}
       id="youtube-player-container" 
       className="relative w-full overflow-hidden touch-manipulation" 
       style={{ 
@@ -61,6 +103,13 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
         className="absolute inset-0 w-full h-full"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       />
+      <style jsx>{`
+        /* Hide YouTube's suggested videos overlay */
+        .ytp-pause-overlay,
+        .ytp-related-videos-container {
+          display: none !important;
+        }
+      `}</style>
     </div>
   );
 };
