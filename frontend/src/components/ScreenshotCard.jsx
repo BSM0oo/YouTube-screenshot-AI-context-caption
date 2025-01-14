@@ -45,12 +45,12 @@ const ScreenshotCard = ({
   const { topic, context, points } = parseStructuredCaption(screenshot.caption);
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden print:w-full print:max-w-none ${expanded ? 'col-span-2' : ''}`}>
+    <div className={`bg-white rounded-lg shadow-md overflow-hidden print:shadow-none print:border-t print:border-gray-200 print:w-full print:max-w-none print:first:border-t-0 ${expanded ? 'col-span-2' : ''}`}>
       <div className="relative">
         <img 
           src={screenshot.image} 
           alt={`Screenshot ${index + 1}`}
-          className={`w-full object-cover print:object-contain print:max-w-full ${expanded ? 'max-h-[600px]' : 'max-h-[300px]'}`}
+          className={`w-full object-cover ${expanded ? 'max-h-[600px]' : 'max-h-[300px]'} print:object-contain print:max-h-[400px] print:w-auto print:mx-auto`}
           onClick={onToggleExpand}
           loading="lazy"
         />
@@ -64,7 +64,7 @@ const ScreenshotCard = ({
         )}
       </div>
       
-      <div className="p-6 space-y-4 print:p-4">
+      <div className="p-6 space-y-4 print:px-0 print:py-4">
         {editMode ? (
           <textarea
             value={screenshot.caption}

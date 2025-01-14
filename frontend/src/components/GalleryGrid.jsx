@@ -17,7 +17,7 @@ const GalleryGrid = ({
   setExpandedScreenshot
 }) => {
   return (
-    <div className="print:mx-0 print:w-full print:max-w-none">
+    <div className="print:mx-0 print:w-full print:max-w-none print:p-0">
       {groupByType ? (
         // Grouped view
         Object.entries(groupedScreenshots).map(([type, typeScreenshots]) => (
@@ -29,7 +29,7 @@ const GalleryGrid = ({
               </h3>
               <span className="text-gray-500">({typeScreenshots.length})</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:grid-cols-1 print:gap-4 print:w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:block print:space-y-8 print:w-full">
               {typeScreenshots.map(({ originalIndex, ...screenshot }) => (
                 screenshot.type === 'prompt_response' ? (
                   <PromptResponseCard

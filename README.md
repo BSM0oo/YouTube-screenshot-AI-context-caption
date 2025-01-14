@@ -73,6 +73,11 @@ youtube-notes-app/
 
 
 ## Improvements roadmap and prompts:
+1/13/25:
+I want to add a mode for taking screenshots called Mark Mode. When selected, the user gets two new buttons: Mark for Screenshot, Mark for Screenshot + Caption. Each time user clicks mark for Screenshot it records the time stamp of the portion of video. When all video parts are selected, user clicks "Capture marked", and all the marked screenshots are processed for screenshot or screenshot + caption, and then displayed in the gallery. 
+
+ each time there's a portion of the video they want to have a screenshot. there's something about this file that makes the screenshot functionality work perfectly so that it captures at the exact correct time and gets all the information including text on the time point in the video. in my project, one of the components seems to have messed this up so its not always getting the perfect time point, not always getting the image, and sometimes has weird overlays, or is missing the important text overlay that has relevant information for my video.  attached is the correct implementation  here's my frontend directory of my project. review it and the components to figure out what the issue is. /Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud/frontend  save copies of the incorrect files in an archived folder  insert the changes needed or replace the incorrect files * test the revised version stop at any point if one of your tools doesn't work. use multistep reasoning.
+
 1/12/25:
 - Add ability to delete cards from the screenshot gallery
 - 

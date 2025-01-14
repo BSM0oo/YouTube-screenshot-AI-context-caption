@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import GalleryControls from './GalleryControls';
-import GalleryGrid from './GalleryGrid';
+import DraggableGalleryGrid from './DraggableGalleryGrid';
 
 const EnhancedScreenshotGallery = ({
   screenshots,
@@ -16,6 +16,7 @@ const EnhancedScreenshotGallery = ({
   const [groupByType, setGroupByType] = useState(false);
   const [expandedScreenshot, setExpandedScreenshot] = useState(null);
   const [sortAscending, setSortAscending] = useState(true);
+  const [reorderMode, setReorderMode] = useState(false);
 
   const regenerateCaption = async (index) => {
     try {
@@ -110,14 +111,17 @@ const EnhancedScreenshotGallery = ({
         sortAscending={sortAscending}
         groupByType={groupByType}
         editMode={editMode}
+        reorderMode={reorderMode}
         onSortToggle={() => setSortAscending(!sortAscending)}
         onGroupToggle={() => setGroupByType(!groupByType)}
         onEditToggle={() => setEditMode(!editMode)}
+        onReorderToggle={() => setReorderMode(!reorderMode)}
       />
 
-      <GalleryGrid
+      <DraggableGalleryGrid
         screenshots={sortScreenshots(screenshots)}
         groupByType={groupByType}
+        reorderMode={reorderMode}
         groupedScreenshots={groupedScreenshots}
         editMode={editMode}
         expandedScreenshot={expandedScreenshot}
@@ -127,6 +131,7 @@ const EnhancedScreenshotGallery = ({
         onDeleteScreenshot={deleteScreenshot}
         onUpdatePromptResponse={updatePromptResponse}
         setExpandedScreenshot={setExpandedScreenshot}
+        onReorderScreenshots={onScreenshotsUpdate}
       />
 
       {error && (
