@@ -26,31 +26,62 @@ const ScreenshotManager = ({
     return match ? match[1] : url;
   };
 
+  // Helper function to ensure frame is ready
+  const waitForFrame = async () => {
+    return new Promise((resolve) => {
+      // Wait for next frame plus a small buffer
+      requestAnimationFrame(() => {
+        setTimeout(resolve, 100);
+      });
+    });
+  };
+
+  // Helper function to verify screenshot quality
+  const verifyScreenshot = async (imageData) => {
+    // Check if image data is valid and has minimum dimensions
+    if (!imageData || imageData.length < 1000) {
+      throw new Error('Invalid screenshot data');
+    }
+    return true;
+  };
+
   const captureScreenshot = async () => {
     if (!player) return;
     
     try {
       setProcessingScreenshot(true);
       setError('');
+      
+      // Pause video and wait for frame to settle
       player.pauseVideo();
+      await waitForFrame();
+      
       const currentTime = player.getCurrentTime();
 
-      // Add retry logic
+      // Add enhanced retry logic with quality verification
       let attempts = 0;
       const maxAttempts = 3;
       let screenshotResponse;
 
       while (attempts < maxAttempts) {
         try {
+          // Ensure we're at the exact timestamp
+          player.seekTo(currentTime, true);
+          await waitForFrame();
+          
           screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
             video_id: extractVideoId(videoId),
             timestamp: currentTime
           });
+
+          // Verify screenshot quality
+          await verifyScreenshot(screenshotResponse.data.image_data);
           break; // Success, exit loop
         } catch (error) {
           attempts++;
+          console.warn(`Screenshot attempt ${attempts} failed:`, error);
           if (attempts === maxAttempts) {
-            throw error; // Throw on final attempt
+            throw new Error('Failed to capture a quality screenshot after multiple attempts');
           }
           await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
         }
@@ -77,7 +108,8 @@ const ScreenshotManager = ({
         timestamp: currentTime,
         caption: captionResponse.data.caption,
         notes: '',
-        transcriptContext: relevantTranscript
+        transcriptContext: relevantTranscript,
+        content_type: captionResponse.data.content_type
       };
 
       onScreenshotsTaken([newScreenshot]);
@@ -106,26 +138,34 @@ const ScreenshotManager = ({
       const newScreenshots = [];
       for (let i = 0; i < burstCount; i++) {
         const currentTime = player.getCurrentTime() + (i * burstInterval);
-        player.seekTo(currentTime, true);
         
-        // Add retry logic for burst mode
+        // Seek to exact timestamp and wait for frame
+        player.seekTo(currentTime, true);
+        await waitForFrame();
+        
+        // Add enhanced retry logic with quality verification
         let attempts = 0;
         const maxAttempts = 3;
         let screenshotResponse;
 
         while (attempts < maxAttempts) {
           try {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before capture
+            // Additional frame synchronization pause
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
               video_id: extractVideoId(videoId),
               timestamp: currentTime
             });
+
+            // Verify screenshot quality
+            await verifyScreenshot(screenshotResponse.data.image_data);
             break; // Success, exit loop
           } catch (error) {
             attempts++;
+            console.warn(`Burst screenshot attempt ${attempts} failed:`, error);
             if (attempts === maxAttempts) {
-              throw error; // Throw on final attempt
+              throw new Error(`Failed to capture quality screenshot ${i + 1} of ${burstCount}`);
             }
             await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
           }
@@ -152,7 +192,8 @@ const ScreenshotManager = ({
           timestamp: currentTime,
           caption: captionResponse.data.caption,
           notes: '',
-          transcriptContext: relevantTranscript
+          transcriptContext: relevantTranscript,
+          content_type: captionResponse.data.content_type
         });
       }
 

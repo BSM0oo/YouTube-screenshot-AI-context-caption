@@ -101,7 +101,10 @@ const EnhancedScreenshotGallery = ({
   const groupedScreenshots = groupByType ? groupScreenshotsByType() : null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 print:space-y-4 print:mx-0 print:w-full print:max-w-full">
+      <div className="print:fixed print:top-0 print:right-4 print:text-sm print:text-gray-500">
+        {new Date().toLocaleDateString()}
+      </div>
       <GalleryControls
         videoTitle={videoTitle}
         sortAscending={sortAscending}

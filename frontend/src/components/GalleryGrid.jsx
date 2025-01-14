@@ -17,19 +17,19 @@ const GalleryGrid = ({
   setExpandedScreenshot
 }) => {
   return (
-    <>
+    <div className="print:mx-0 print:w-full print:max-w-none">
       {groupByType ? (
         // Grouped view
         Object.entries(groupedScreenshots).map(([type, typeScreenshots]) => (
-          <div key={type} className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
+          <div key={type} className="mb-8 print:mb-4">
+            <div className="flex items-center gap-2 mb-4 print:mb-2">
               {type !== 'prompt_response' && getContentTypeIcon(type)}
-              <h3 className="text-xl font-semibold capitalize">
+              <h3 className="text-xl font-semibold capitalize print:text-lg">
                 {type === 'prompt_response' ? 'Prompt Responses' : type}
               </h3>
               <span className="text-gray-500">({typeScreenshots.length})</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:grid-cols-1 print:gap-4 print:w-full">
               {typeScreenshots.map(({ originalIndex, ...screenshot }) => (
                 screenshot.type === 'prompt_response' ? (
                   <PromptResponseCard
@@ -61,7 +61,7 @@ const GalleryGrid = ({
         ))
       ) : (
         // Chronological view
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:grid-cols-1 print:gap-4 print:w-full">
           {screenshots.map((screenshot, index) => (
             screenshot.type === 'prompt_response' ? (
               <PromptResponseCard
@@ -90,7 +90,7 @@ const GalleryGrid = ({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

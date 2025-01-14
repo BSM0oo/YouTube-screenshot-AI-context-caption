@@ -1,65 +1,9 @@
 # YouTube Notes App
 
-A professional web application for taking structured notes while watching YouTube videos. Features include screenshot capture, AI-powered captions, comprehensive transcript analysis, and polished export options for creating study materials and documentation.
+A web application for taking structured notes while watching YouTube videos. Features include screenshot capture, AI-powered captions, comprehensive transcript analysis, and polished export options for creating study materials and documentation.
 
-## to test locally we added static folder and from root directory u can use:
-uvicorn main:app --host 0.0.0.0 --port 8080 --reload
-(python main.py i think)
 
-### Docker Instructions:
 
-**Start with:** docker build --platform linux/amd64 -t youtube-notes-app .
-
-Terminal:
-docker exec -it <container_id> ls -la /app/static
-
-Docker build:
-docker build -t youtube-notes-app .
-
-Docker Run:
-docker run -p 8000:8000 youtube-notes-app
-
-# Docker commands (u can do as script if u want)
-## create your app service accounts and give them privileges:
-# Create a service account for Cloud Run
-gcloud iam service-accounts create youtube-notes-app-sa \
-    --display-name="YouTube Notes App Service Account"
-
-# Grant necessary roles
-gcloud projects add-iam-policy-binding webapps-426717 \
-    --member="serviceAccount:youtube-notes-app-sa@webapps-426717.iam.gserviceaccount.com" \
-    --role="roles/run.invoker"
-
-# Navigate to your project directory
-cd '/Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud'
-
-# Submit the build to Cloud Build
-gcloud builds submit --tag gcr.io/webapps-426717/youtube-notes-app
-
-# Deploy to Cloud Run
-gcloud run deploy youtube-notes-app \
-  --image gcr.io/webapps-426717/youtube-notes-app \
-  --platform managed \
-  --region us-central1 \
-  --project webapps-426717 \
-  --allow-unauthenticated \
-  --memory 512Mi \
-  --cpu 1 \
-  --min-instances 0 \
-  --max-instances 1
-
-# after deployment monitor your app:
-After deployment:
-
-Monitor your application:
-bashCopy# View logs
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=youtube-notes-app" --limit 50
-
-Check service status:
-bashCopygcloud run services describe youtube-notes-app --region us-central1
-
-View URL and other details:
-bashCopygcloud run services list
 
 ## Project Structure
 
@@ -86,6 +30,44 @@ youtube-notes-app/
 └── README.md              # Documentation
 
 ```
+
+- [YouTube Notes App](#youtube-notes-app)
+  - [Project Structure](#project-structure)
+  - [Features - see below for more info on files](#features---see-below-for-more-info-on-files)
+  - [Improvements roadmap and prompts:](#improvements-roadmap-and-prompts)
+    - [Ideas:](#ideas)
+    - [Completed:](#completed)
+    - [Updates on 12/19/24:](#updates-on-121924)
+  - [Known Issues and Limitations](#known-issues-and-limitations)
+  - [Future Improvements](#future-improvements)
+    - [Core Functionality](#core-functionality)
+    - [Export Options](#export-options)
+  - [Component Architecture](#component-architecture)
+  - [Export Formats](#export-formats)
+    - [Markdown Export](#markdown-export)
+    - [HTML Export](#html-export)
+    - [PDF Export (via Print)](#pdf-export-via-print)
+  - [Setup and Development](#setup-and-development)
+  - [Network Access](#network-access)
+  - [Component Architecture](#component-architecture-1)
+  - [State Management](#state-management)
+  - [Backend Integration](#backend-integration)
+  - [Setup and Development](#setup-and-development-1)
+  - [Network Access](#network-access-1)
+  - [Known Issues and Limitations](#known-issues-and-limitations-1)
+  - [Future Improvements](#future-improvements-1)
+- [How to build the docker images and deploy to gcloud](#how-to-build-the-docker-images-and-deploy-to-gcloud)
+  - [to test locally we added static folder and from root directory u can use:](#to-test-locally-we-added-static-folder-and-from-root-directory-u-can-use)
+    - [Docker Instructions:](#docker-instructions)
+- [Docker commands (u can do as script if u want)](#docker-commands-u-can-do-as-script-if-u-want)
+  - [create your app service accounts and give them privileges:](#create-your-app-service-accounts-and-give-them-privileges)
+- [Create a service account for Cloud Run](#create-a-service-account-for-cloud-run)
+- [Grant necessary roles](#grant-necessary-roles)
+- [Navigate to your project directory](#navigate-to-your-project-directory)
+- [Submit the build to Cloud Build](#submit-the-build-to-cloud-build)
+- [Deploy to Cloud Run](#deploy-to-cloud-run)
+- [after deployment monitor your app:](#after-deployment-monitor-your-app)
+
 
 ## Features - see below for more info on files
 
@@ -405,3 +387,63 @@ For local network access:
 - Add user authentication for multi-user support
 - Optimize image storage and processing
 - Add cloud deployment support
+
+# How to build the docker images and deploy to gcloud 
+## to test locally we added static folder and from root directory u can use:
+uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+(python main.py i think)
+
+### Docker Instructions:
+
+**Start with:** docker build --platform linux/amd64 -t youtube-notes-app .
+
+Terminal:
+docker exec -it <container_id> ls -la /app/static
+
+Docker build:
+docker build -t youtube-notes-app .
+
+Docker Run:
+docker run -p 8000:8000 youtube-notes-app
+
+# Docker commands (u can do as script if u want)
+## create your app service accounts and give them privileges:
+# Create a service account for Cloud Run
+gcloud iam service-accounts create youtube-notes-app-sa \
+    --display-name="YouTube Notes App Service Account"
+
+# Grant necessary roles
+gcloud projects add-iam-policy-binding webapps-426717 \
+    --member="serviceAccount:youtube-notes-app-sa@webapps-426717.iam.gserviceaccount.com" \
+    --role="roles/run.invoker"
+
+# Navigate to your project directory
+cd '/Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud'
+
+# Submit the build to Cloud Build
+gcloud builds submit --tag gcr.io/webapps-426717/youtube-notes-app
+
+# Deploy to Cloud Run
+gcloud run deploy youtube-notes-app \
+  --image gcr.io/webapps-426717/youtube-notes-app \
+  --platform managed \
+  --region us-central1 \
+  --project webapps-426717 \
+  --allow-unauthenticated \
+  --memory 512Mi \
+  --cpu 1 \
+  --min-instances 0 \
+  --max-instances 1
+
+# after deployment monitor your app:
+After deployment:
+
+Monitor your application:
+bashCopy# View logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=youtube-notes-app" --limit 50
+
+Check service status:
+bashCopygcloud run services describe youtube-notes-app --region us-central1
+
+View URL and other details:
+bashCopygcloud run services list

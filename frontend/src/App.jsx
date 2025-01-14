@@ -48,12 +48,10 @@ const appStyles = `
     box-sizing: border-box;
   }
 
-  @media (min-width: 640px) {
-    .content-container {
-      max-width: 80rem;
-      margin: 0 auto;
-      padding: 2rem;
-    }
+  .content-container.constrained {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 2rem;
   }
 
   .video-container {
@@ -80,6 +78,9 @@ const clearServerState = async (eraseFiles) => {
 };
 
 const App = () => {
+  // Add new state for full-width mode
+  const [isFullWidth, setIsFullWidth] = useState(false);
+  
   // Enhanced state management with persistence
   const [videoId, setVideoId] = usePersistedState('yt-notes-videoId', '');
   const [screenshots, setScreenshots] = usePersistedState('yt-notes-screenshots', []);
@@ -270,8 +271,8 @@ const App = () => {
 
   return (
     <div className="app-container bg-gray-50">
-      <div className="content-container">
-        {/* Collapsible main content */}
+      <div className={`content-container ${!isFullWidth ? 'constrained' : ''}`}>
+        {/* Add view toggle button next to the clear data button */}
         {isMainContentVisible && (
           <>
             <div className="flex flex-col w-full mb-4">
@@ -287,6 +288,12 @@ const App = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
+                  <button
+                    onClick={() => setIsFullWidth(!isFullWidth)}
+                    className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+                  >
+                    {isFullWidth ? 'Constrained View' : 'Full Width View'}
+                  </button>
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"

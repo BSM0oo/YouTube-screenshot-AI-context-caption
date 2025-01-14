@@ -26,6 +26,8 @@ from fastapi.responses import FileResponse
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from pathlib import Path
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 
 # Load environment variables
@@ -35,6 +37,9 @@ load_dotenv()
 anthropic = Anthropic(
     api_key=os.getenv('ANTHROPIC_API_KEY')
 )
+
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
 app = FastAPI()
 
@@ -163,32 +168,55 @@ def extract_links_from_description(description: str) -> List[str]:
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     return re.findall(url_pattern, description)
 
-def get_video_info(url: str) -> Optional[VideoInfo]:
-    """Extract information from a YouTube video including chapters, description, and links."""
-    if not is_valid_youtube_url(url):
-        raise ValueError("Invalid YouTube URL provided")
-
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': True,
-    }
-
+def get_video_info(video_id: str) -> Optional[VideoInfo]:
+    """Extract information from a YouTube video using the YouTube Data API."""
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            chapters = info.get('chapters', [])
-            description = info.get('description', '')
-            links = extract_links_from_description(description)
-            
-            return VideoInfo(
-                title=info.get('title', ''),
-                description=description,
-                chapters=chapters,
-                links=links
-            )
+        # Get video details
+        video_response = youtube.videos().list(
+            part='snippet,contentDetails',
+            id=video_id
+        ).execute()
+
+        if not video_response['items']:
+            return None
+
+        video_data = video_response['items'][0]
+        description = video_data['snippet']['description']
+        title = video_data['snippet']['title']
+        
+        # Extract chapters from description (YouTube stores chapters in description)
+        chapters = []
+        lines = description.split('\n')
+        for line in lines:
+            # Look for timestamp patterns like "0:00" or "00:00" or "0:00:00"
+            match = re.search(r'^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\s*[-–]\s*(.+)$', line.strip())
+            if match:
+                groups = match.groups()
+                if len(groups) == 4:
+                    hours = int(groups[0]) if groups[0] else 0
+                    minutes = int(groups[1])
+                    seconds = int(groups[2])
+                    title = groups[3].strip()
+                    time_seconds = hours * 3600 + minutes * 60 + seconds
+                    chapters.append({
+                        'start_time': time_seconds,
+                        'title': title
+                    })
+
+        links = extract_links_from_description(description)
+        
+        return VideoInfo(
+            title=title,
+            description=description,
+            chapters=chapters,
+            links=links
+        )
+
+    except HttpError as e:
+        print(f"An HTTP error occurred: {e}")
+        return None
     except Exception as e:
-        print(f"Error extracting video information: {str(e)}")
+        print(f"An error occurred: {e}")
         return None
 
 @app.get("/api/transcript/{video_id}")
@@ -333,7 +361,15 @@ async def capture_screenshot(request: VideoRequest):
                 browser = await p.chromium.launch()
                 page = await browser.new_page()
                 
-                await page.goto(f"https://www.youtube.com/embed/{request.video_id}?start={int(request.timestamp)}&autoplay=1")
+                # Set a user agent to appear more like a regular browser
+                await page.set_extra_http_headers({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                })
+
+                # Try embedding with modest branding and origin parameters
+                embed_url = f"https://www.youtube.com/embed/{request.video_id}?start={int(request.timestamp)}&autoplay=1&modestbranding=1&origin=http://localhost"
+                await page.goto(embed_url)
+                
                 await page.wait_for_load_state('networkidle')
                 
                 # Wait for and handle video element
@@ -664,10 +700,9 @@ Response:"""
 
 @app.get("/api/video-info/{video_id}")
 async def get_video_information(video_id: str):
-    """Get detailed information about a YouTube video"""
+    """Get detailed information about a YouTube video using the YouTube API"""
     try:
-        video_url = f"https://www.youtube.com/watch?v={video_id}"
-        video_info = get_video_info(video_url)
+        video_info = get_video_info(video_id)
         
         if video_info:
             return {
