@@ -609,7 +609,7 @@ Transcript:
 
 Provide your response following these exact rules:
 
-1. Write from a first-person perspective as if you are the author/speaker in the transcript
+1. Avoid using introductory statements or phrases like "The video shows...", "In this screenshot...", "The speaker explains..." Generate response as if you are the author of the transcript but don't refer to yourself in the first person. 
 2. Never refer to "the video", "the transcript", or use phrases like "they mention" or "the speaker explains"
 3. Format timestamps like this: [HH:MM:SS]
 4. Only add timestamps in parentheses at the end of key points

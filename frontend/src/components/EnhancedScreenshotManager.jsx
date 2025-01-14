@@ -71,21 +71,14 @@ const EnhancedScreenshotManager = ({
       
       if (player) {
         player.pauseVideo();
-        player.seekTo(timestamp, true);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for frame
+        await player.seekTo(timestamp, true);
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
-      let screenshotResponse;
-      try {
-        screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
-          video_id: extractVideoId(videoId),
-          timestamp
-        });
-        console.log("Screenshot response:", screenshotResponse.data); // Add debugging
-      } catch (error) {
-        console.error("Screenshot API error:", error);
-        throw error;
-      }
+      const screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
+        video_id: extractVideoId(videoId),
+        timestamp
+      });
 
       const contextWindow = 20;
       const relevantTranscript = transcript
@@ -96,19 +89,12 @@ const EnhancedScreenshotManager = ({
         .map(entry => `[${formatTime(entry.start)}] ${entry.text}`)
         .join('\n\n');
 
-      let captionResponse;
-      try {
-        captionResponse = await axios.post(`${API_BASE_URL}/api/generate-structured-caption`, {
-          timestamp,
-          image_data: screenshotResponse.data.image_data,
-          transcript_context: relevantTranscript,
-          prompt: customPrompt
-        });
-        console.log("Caption response:", captionResponse.data); // Add debugging
-      } catch (error) {
-        console.error("Caption API error:", error);
-        throw error;
-      }
+      const captionResponse = await axios.post(`${API_BASE_URL}/api/generate-structured-caption`, {
+        timestamp,
+        image_data: screenshotResponse.data.image_data,
+        transcript_context: relevantTranscript,
+        prompt: customPrompt
+      });
 
       return {
         image: screenshotResponse.data.image_data,
@@ -177,7 +163,8 @@ const EnhancedScreenshotManager = ({
     if (!player) return;
     
     try {
-      const screenshot = await captureScreenshot(player.getCurrentTime());
+      const currentTime = player.getCurrentTime();
+      const screenshot = await captureScreenshot(currentTime);
       onScreenshotsTaken([screenshot]);
     } catch (error) {
       setError('Failed to capture screenshot: ' + error.message);
