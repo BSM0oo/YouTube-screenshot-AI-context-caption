@@ -11,6 +11,7 @@ from playwright.async_api import async_playwright
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from transcript_retriever import EnhancedTranscriptRetriever
+from modules.gif_capture import GifCapture
 import yt_dlp
 import re
 from urllib.parse import urlparse
@@ -37,6 +38,9 @@ load_dotenv()
 anthropic = Anthropic(
     api_key=os.getenv('ANTHROPIC_API_KEY')
 )
+
+# Initialize GIF capture
+gif_capture = GifCapture()
 
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
@@ -83,6 +87,13 @@ class VideoFrameAnalysisRequest(BaseModel):
     video_id: str
     start_time: float
     duration: float = 30.0  # Default to 30 seconds
+
+class GifCaptureRequest(BaseModel):
+    video_id: str
+    start_time: float
+    duration: float = 3.0  # Default to 3 seconds
+    fps: Optional[int] = 10
+    width: Optional[int] = 480
 
 class QuestionRequest(BaseModel):
     transcript: str
@@ -353,6 +364,36 @@ async def load_state():
 
         return {"state": state}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/capture-gif")
+async def capture_gif(request: GifCaptureRequest):
+    """Capture a GIF from a YouTube video"""
+    try:
+        gif_data = await gif_capture.capture_gif(
+            video_id=request.video_id,
+            start_time=request.start_time,
+            duration=request.duration,
+            fps=request.fps,
+            width=request.width
+        )
+        
+        # Save GIF to disk
+        timestamp_str = f"{int(request.start_time)}"
+        file_path = SCREENSHOTS_DIR / f"yt_{request.video_id}_{timestamp_str}.gif"
+        
+        with open(file_path, "wb") as f:
+            f.write(gif_data)
+        
+        # Convert to base64 for response
+        base64_gif = base64.b64encode(gif_data).decode()
+        
+        return {
+            "gif_data": f"data:image/gif;base64,{base64_gif}"
+        }
+        
+    except Exception as e:
+        print(f"GIF capture error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/state/clear")

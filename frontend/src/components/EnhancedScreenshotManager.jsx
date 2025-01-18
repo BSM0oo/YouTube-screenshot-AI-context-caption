@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { getContentTypeIcon } from '../utils/iconUtils.jsx';
+import GifCaptureManager from './GifCaptureManager.jsx';
 
 const EnhancedScreenshotManager = ({ 
   videoId, 
@@ -11,6 +12,7 @@ const EnhancedScreenshotManager = ({
   customPrompt 
 }) => {
   const [screenshotMode, setScreenshotMode] = useState('single');
+  const [showGifCapture, setShowGifCapture] = useState(false);
   const [burstCount, setBurstCount] = useState(3);
   const [burstInterval, setBurstInterval] = useState(2);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -158,6 +160,17 @@ const EnhancedScreenshotManager = ({
     }
   };
 
+  const handleGifCaptured = (gifData, timestamp) => {
+    onScreenshotsTaken([{
+      image: gifData,
+      timestamp,
+      caption: 'Animated GIF capture',
+      content_type: 'gif',
+      notes: '',
+      transcriptContext: ''
+    }]);
+  };
+
   const handleCleanup = () => {
     setIsCleaningUp(true);
     try {
@@ -193,6 +206,15 @@ const EnhancedScreenshotManager = ({
                   className="mr-2"
                 />
                 Burst Mode
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={screenshotMode === 'gif'}
+                  onChange={() => setScreenshotMode('gif')}
+                  className="mr-2"
+                />
+                GIF Mode
               </label>
             </div>
             <div className="h-5 border-l border-gray-300"></div>
@@ -284,13 +306,23 @@ const EnhancedScreenshotManager = ({
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-    </div>
-  );
-};
+      {screenshotMode === 'gif' && (
+      <div className="mt-4">
+      <GifCaptureManager
+          videoId={extractVideoId(videoId)}
+            currentTime={player ? player.getCurrentTime() : 0}
+              onGifCaptured={handleGifCaptured}
+              />
+              </div>
+        )}
 
-export default EnhancedScreenshotManager;
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  export default EnhancedScreenshotManager;

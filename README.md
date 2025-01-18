@@ -38,6 +38,9 @@ youtube-notes-app/
   - [Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.](#improvements-roadmap-and-prompts-fix-one-by-one-and-ask-for-approval-before-going-to-the-next-one)
     - [Ideas:](#ideas)
     - [Completed:](#completed)
+  - [Changelog](#changelog)
+    - [Updates on 1/17/25:](#updates-on-11725)
+    - [Updates on 1/18/25:](#updates-on-11825)
     - [Updates on 12/19/24:](#updates-on-121924)
   - [Known Issues and Limitations](#known-issues-and-limitations)
   - [Future Improvements](#future-improvements)
@@ -85,17 +88,22 @@ checkout README.md for info on how the files and components are structured
 5) Review any files with multiple edits from this run.
 6) Test the change by running npm run dev in the frontend folder
 7) Fix any issues found in the test
-8) Let me know status of change, and ask permission to move to the next one.
+8) add the changes you made to the changelog in the readme.md file
+9) Let me know status of change and then ask permission to move to the next one. also ask me if you should push your latest changes to the github repo. push to branch below if appropriate. Suggest a new branch if appropriate. Suggest reverting to main branch where appropriate. 
+Repo info: git push origin claude_fixes_and_marked_functionality
+origin  https://github.com/BSM0oo/YouTube-screenshot-AI-context-caption.git (fetch)
+origin  https://github.com/BSM0oo/YouTube-screenshot-AI-context-caption.git (push)
+current branch = claude_fixes_and_marked_functionality
 
 ## Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.
 
 - FIX: I can't edit the captions. Edit buton sets up the edit box but I can't actually type into the box. 
 - NEW: Add a toggle to process single screenshots without captions vs. with captions. When marked for caption, process the screenshots / context for captions, or when marked for screenshot alone just screenshot them without processing so that just the screenshots are added to the gallery without any further processing. 
 - REMOVE: Get rid of the smart detection and its related code.
-- NEW: Add the ability to capture a GIF (user can determine length)
+- NEW: Add the ability to capture a GIF (user can determine length). Create this as a new component for the frontend, and a new module for the backend (main.py getting too long otherwise i think).
+- 
 1/13/25:
-
-- Add a new option for taking screenshots called Mark Mode. When selected, the user gets two new buttons: Mark for Screenshot, Mark for Screenshot + Caption. Each time user clicks mark for Screenshot it records the time stamp of the portion of video. When all video parts are selected, user clicks "Capture marked", and all the marked screenshots are processed for screenshot or screenshot + caption, and then displayed in the gallery. 
+- Mark mode: Add a new option for taking screenshots called Mark Mode. When selected, the user gets two new buttons: Mark for Screenshot, Mark for Screenshot + Caption. Each time user clicks mark for Screenshot it records the time stamp of the portion of video. When all video parts are selected, user clicks "Capture marked", and all the marked screenshots are processed for screenshot or screenshot + caption, and then displayed in the gallery. 
 - When marked for caption, process the screenshots / context for captions, or when marked for screenshot alone just screenshot them without processing so that just the screenshots are added to the gallery without any further processing. 
 - NEW FUNCTION: Add a toggle that increases the size of the video to full width of the page borders (not as wide in constarined mode and all the way to the edge of the window in the full width view)
 
@@ -182,6 +190,23 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Fixed shadcn/ui component integration:
+  - Added path alias configuration in vite.config.js
+  - Created UI components directory with card, button, input, and label components
+  - Added Tailwind CSS configuration and globals.css
+  - Updated GifCaptureManager to use proper component imports
+  - Simplified toast notifications to use window.alert temporarily
+- Fixed backend GIF capture functionality:
+  - Updated moviepy import statement in gif_capture.py
+  - Cleaned up duplicate requirements in requirements.txt
+  - Fixed module import path for better compatibility
+
+- Added GIF capture functionality:
+  - Created new backend module gif_capture.py for GIF creation
+  - Added new GifCaptureManager.jsx component for frontend
+  - Integrated with existing screenshot gallery
+  - Support for customizable duration and FPS
+  - GIF preview in gallery
 - Added toggle for caption generation when taking screenshots
   - Added `processWithCaptions` state to EnhancedScreenshotManager
   - Modified `captureScreenshot` function to skip caption API calls when disabled
