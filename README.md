@@ -188,6 +188,13 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
   - Added UI toggle next to screenshot mode selection
 - Modified VideoRequest model in backend to include `generate_caption` parameter
 
+### Updates on 1/18/25:
+- Removed smart detection functionality:
+  - Removed smart detection UI option and related code from EnhancedScreenshotManager
+  - Removed SceneDetector class and analyze-video-frames endpoint from backend
+  - Removed OpenCV and computer vision related dependencies
+  - Streamlined screenshot interface to focus on single and burst modes
+
 ### Updates on 12/19/24:
 Here's what has been implemented:
 
