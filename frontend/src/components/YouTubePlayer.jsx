@@ -55,7 +55,7 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
       playerVars: {
         autoplay: 0,
         controls: 1,
-        rel: 0, // This prevents related videos from showing
+        rel: 0,
         origin: window.location.origin,
         enablejsapi: 1
       },
@@ -70,17 +70,14 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
     });
   };
 
-  // Function to handle screenshots (this should be called from your screenshot logic)
   const prepareForScreenshot = () => {
     if (!containerRef.current) return;
     
-    // Hide any "more videos" elements before screenshot
     const relatedVideos = containerRef.current.querySelector('[aria-label="Related videos"]');
     if (relatedVideos) {
       relatedVideos.style.display = 'none';
     }
     
-    // Return a cleanup function
     return () => {
       if (relatedVideos) {
         relatedVideos.style.display = '';
@@ -95,21 +92,13 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
       className="relative w-full overflow-hidden touch-manipulation" 
       style={{ 
         paddingBottom: '56.25%',
-        WebkitOverflowScrolling: 'touch' // Enable smooth scrolling on iOS
+        WebkitOverflowScrolling: 'touch'
       }}
     >
       <div 
         id="youtube-player" 
-        className="absolute inset-0 w-full h-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        className="absolute inset-0 w-full h-full youtube-player"
       />
-      <style jsx>{`
-        /* Hide YouTube's suggested videos overlay */
-        .ytp-pause-overlay,
-        .ytp-related-videos-container {
-          display: none !important;
-        }
-      `}</style>
     </div>
   );
 };

@@ -101,12 +101,13 @@ const DraggableGalleryGrid = ({
                 key={`${screenshot.timestamp}-${index}`} 
                 draggableId={`${screenshot.timestamp}-${index}`} 
                 index={index}
-                isDragDisabled={!!screenshot.type === 'prompt_response'}
+                isDragDisabled={!reorderMode || screenshot.type === 'prompt_response'}
               >
                 {(provided, draggableSnapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
+                    {...provided.dragHandleProps}
                     className={`${draggableSnapshot.isDragging ? 'opacity-75 rotate-1' : ''}`}
                     style={{
                       ...provided.draggableProps.style,
@@ -116,11 +117,11 @@ const DraggableGalleryGrid = ({
                         : provided.draggableProps.style.transform
                     }}
                   >
-                    <div {...(reorderMode ? provided.dragHandleProps : {})} className="relative">
+                    <div className="relative">
                       {/* Visual indicator for drag handle */}
-                      {reorderMode && !screenshot.type === 'prompt_response' && (
-                        <div className="absolute top-2 left-2 z-10 bg-black/50 text-white p-1 rounded cursor-move print:hidden">
-                          ⋮⋮
+                      {reorderMode && screenshot.type !== 'prompt_response' && (
+                        <div className="absolute top-2 left-2 z-10 bg-black/50 text-white px-2 py-1 rounded text-sm print:hidden">
+                          Drag to reorder
                         </div>
                       )}
                       {screenshot.type === 'prompt_response' ? (

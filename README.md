@@ -159,6 +159,19 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Refactored screenshot functionality:
+  - Split EnhancedScreenshotManager into smaller, focused components
+  - Created new /components/screenshot directory
+  - Added screenshotService.js for API and utility functions
+  - Improved component organization and reusability
+  - Created separate components for each screenshot mode
+  - Added proper component interfaces and prop types
+  - Moved business logic to service layer
+- Added new dependencies:
+  - Installed tailwindcss-animate for UI animations
+  - Added @radix-ui/react-slot for component composition
+  - Updated shadcn/ui component integration
+
 - Added Mark Mode for screenshots:
   - New screenshot mode for marking multiple timestamps
   - Added UI for marking timestamps and capturing all marked points

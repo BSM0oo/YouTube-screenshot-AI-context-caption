@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import YouTubePlayer from './components/YouTubePlayer';
-import EnhancedScreenshotManager from './components/EnhancedScreenshotManager';
+import EnhancedScreenshotManager from './components/screenshot/EnhancedScreenshotManager';
 import EnhancedScreenshotGallery from './components/EnhancedScreenshotGallery_New';
 import TranscriptViewer from './components/TranscriptViewer';
 import NotesManager from './components/NotesManager';
