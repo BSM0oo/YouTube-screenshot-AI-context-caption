@@ -160,6 +160,15 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Improved Mark Mode stability and caption handling:
+  - Added 15-second timeout for caption generation
+  - Screenshots now save even if captions timeout
+  - Added 5-second delay between captures
+  - Added visual indicator for failed captions
+  - Added ability to regenerate failed captions later
+  - Improved error messages and state management
+
+### Previous Updates on 1/17/25:
 - Added screenshot optimization features:
   - Added WebP image compression (80% quality) to reduce file sizes
   - Added automatic cleanup of screenshots older than 7 days

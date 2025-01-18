@@ -25,6 +25,7 @@ const EnhancedScreenshotManager = ({
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [processWithCaptions, setProcessWithCaptions] = useState(true);
   const [markedTimestamps, setMarkedTimestamps] = useState([]);
+  const [remainingMarks, setRemainingMarks] = useState(0);
 
   const handleSingleScreenshot = async () => {
     if (!player) return;
@@ -96,10 +97,11 @@ const EnhancedScreenshotManager = ({
   const handleMarkForScreenshot = () => {
     if (!player) return;
     const currentTime = player.getCurrentTime();
-    setMarkedTimestamps(prev => [...prev, { 
-      timestamp: currentTime, 
-      withCaption: processWithCaptions 
-    }]);
+    setMarkedTimestamps(prev => [
+      ...prev, 
+      { timestamp: currentTime, withCaption: processWithCaptions }
+    ]);
+    setRemainingMarks(prev => prev + 1);
   };
 
   const handleCaptureMarked = async () => {
@@ -111,8 +113,19 @@ const EnhancedScreenshotManager = ({
       player.pauseVideo();
       
       const screenshots = [];
+      let captionErrors = false;
+      setRemainingMarks(markedTimestamps.length);
+
+      // Process marks one at a time, updating UI after each
       for (const mark of markedTimestamps) {
         try {
+          // Wait before starting next capture
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Ensure player is at correct time
+          player.seekTo(mark.timestamp, true);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
           const screenshot = await captureScreenshot({
             player,
             videoId,
@@ -121,23 +134,48 @@ const EnhancedScreenshotManager = ({
             transcript,
             customPrompt
           });
+
+          // Update UI immediately with this screenshot
           screenshots.push(screenshot);
+          setScreenshots(prev => [...prev, screenshot]);
+          onScreenshotsTaken([screenshot]);
+          setRemainingMarks(prev => prev - 1);
+
+          if (screenshot.captionError) {
+            captionErrors = true;
+          }
+
+          // Wait 5 seconds after each successful capture before starting the next one
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
         } catch (error) {
-          console.error(`Failed to capture marked screenshot:`, error);
+          console.error(`Failed to capture marked screenshot at ${mark.timestamp}:`, error);
+          setError(`Failed to capture screenshot at ${formatTime(mark.timestamp)}: ${error.message}`);
+          setRemainingMarks(prev => prev - 1);
         }
       }
       
+      // Clear marks only after all processing is done
       if (screenshots.length > 0) {
-        setScreenshots(prev => [...prev, ...screenshots]);
-        onScreenshotsTaken(screenshots);
-        setMarkedTimestamps([]); // Clear marks after successful capture
+        setMarkedTimestamps([]); // Clear marks after all captures
+
+        if (captionErrors) {
+          setError('Some captions failed to generate. You can regenerate them individually.');
+        }
       }
       
     } catch (error) {
+      console.error('Failed to capture marked screenshots:', error);
       setError('Failed to capture marked screenshots: ' + error.message);
     } finally {
       setProcessingScreenshot(false);
-      player.playVideo();
+      if (player) {
+        try {
+          player.playVideo();
+        } catch (e) {
+          console.error('Error resuming video:', e);
+        }
+      }
     }
   };
 
@@ -205,10 +243,14 @@ const EnhancedScreenshotManager = ({
             markedTimestamps={markedTimestamps}
             onMark={handleMarkForScreenshot}
             onCapture={handleCaptureMarked}
-            onClear={() => setMarkedTimestamps([])}
+            onClear={() => {
+              setMarkedTimestamps([]);
+              setRemainingMarks(0);
+            }}
             processWithCaptions={processWithCaptions}
             processingScreenshot={processingScreenshot}
             disabled={!player}
+            remainingMarks={remainingMarks}
           />
         ) : (
           <CaptureControls 

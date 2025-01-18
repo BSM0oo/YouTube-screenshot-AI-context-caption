@@ -8,7 +8,8 @@ const MarkModeControls = ({
   onClear,
   processWithCaptions,
   processingScreenshot,
-  disabled
+  disabled,
+  remainingMarks
 }) => {
   return (
     <div className="space-y-4">
@@ -24,13 +25,21 @@ const MarkModeControls = ({
         <div className="space-y-4">
           <div className="text-sm text-gray-600">
             {markedTimestamps.length} timestamp{markedTimestamps.length !== 1 ? 's' : ''} marked
+            {processingScreenshot && remainingMarks > 0 && (
+              <span className="ml-2 font-medium">
+                ({remainingMarks} remaining to process)
+              </span>
+            )}
           </div>
           <Button
             onClick={onCapture}
             className="w-full bg-green-500 hover:bg-green-600 text-white"
             disabled={processingScreenshot || disabled}
           >
-            Capture All Marked Screenshots
+            {processingScreenshot 
+              ? `Processing... ${remainingMarks} remaining`
+              : 'Capture All Marked Screenshots'
+            }
           </Button>
           <Button
             onClick={onClear}
