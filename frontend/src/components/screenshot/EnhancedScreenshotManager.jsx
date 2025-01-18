@@ -259,6 +259,15 @@ const EnhancedScreenshotManager = ({
             setFontSize={setFontSize}
             textColor={textColor}
             setTextColor={setTextColor}
+            renderCaptureButton={() => (
+              <CaptureControls 
+                mode={screenshotMode}
+                onCapture={screenshotMode === 'single' ? handleSingleScreenshot : handleBurstScreenshots}
+                disabled={!player || isCapturing}
+                processing={processingScreenshot}
+                burstCount={burstCount}
+              />
+            )}
           />
         </div>
 
@@ -271,7 +280,7 @@ const EnhancedScreenshotManager = ({
           />
         )}
 
-        {screenshotMode === 'mark' ? (
+        {screenshotMode === 'mark' && (
           <MarkModeControls 
             markedTimestamps={markedTimestamps}
             onMark={handleMarkForScreenshot}
@@ -284,14 +293,6 @@ const EnhancedScreenshotManager = ({
             processingScreenshot={processingScreenshot}
             disabled={!player}
             remainingMarks={remainingMarks}
-          />
-        ) : (
-          <CaptureControls 
-            mode={screenshotMode}
-            onCapture={screenshotMode === 'single' ? handleSingleScreenshot : handleBurstScreenshots}
-            disabled={!player || isCapturing}
-            processing={processingScreenshot}
-            burstCount={burstCount}
           />
         )}
       </div>
