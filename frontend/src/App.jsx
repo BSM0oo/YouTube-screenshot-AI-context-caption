@@ -391,7 +391,12 @@ const App = () => {
                       {transcript.length > 0 && (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleAnalysisGenerated(transcript)}
+                            onClick={() => {
+                              const fullTranscript = transcript
+                                .map(entry => `[${new Date(entry.start * 1000).toISOString().substr(11, 8)}] ${entry.text}`)
+                                .join('\n');
+                              handleAnalysisGenerated(fullTranscript);
+                            }}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
                             disabled={isAnalyzing}
                           >

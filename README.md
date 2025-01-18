@@ -85,24 +85,16 @@ Features to add or fix:
  each time there's a portion of the video they want to have a screenshot. there's something about this file that makes the screenshot functionality work perfectly so that it captures at the exact correct time and gets all the information including text on the time point in the video. in my project, one of the components seems to have messed this up so its not always getting the perfect time point, not always getting the image, and sometimes has weird overlays, or is missing the important text overlay that has relevant information for my video.  attached is the correct implementation  here's my frontend directory of my project. review it and the components to figure out what the issue is. /Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud/frontend  save copies of the incorrect files in an archived folder  insert the changes needed or replace the incorrect files * test the revised version stop at any point if one of your tools doesn't work. use multistep reasoning.
 
 1/12/25:
-- Add ability to delete cards from the screenshot gallery
+DONE: Add ability to delete cards from the screenshot gallery
 - 
 
 
 1/8/25:
-Add a box for interacting with the anthropic API with the entire transcript used as context. so the user can ask for specific questions to be answered about the transcript content, and those answers will then populate in the grid just like the new screenshot boxes do.
+DONE: Add a box for interacting with the anthropic API with the entire transcript used as context. so the user can ask for specific questions to be answered about the transcript content, and those answers will then populate in the grid just like the new screenshot boxes do.
 
 Adding a new feature: Think about how to Add a box for interacting with the anthropic API with the entire transcript used as context. so the user can ask for specific questions to be answered about the transcript content, and those answers will then populate in the grid just like the new screenshot boxes do. 
 
 "Ask a question about this video!"
-
-User asks for example:  "What types of grips are used for the golf swing?"
-
-Output goes into the grid alongside the screenshots, rich formatting, and nice looking card. 
-
-If video contains information on it, it cites an approximate time stamp in the video (future feature - dont implement yet)
-
-If going to use information outside the transcript, it prompts the user to say ok (future feature - dont implement yet)
 
 1/8/25:
 add a button that expands the size of the video player to fill the screen horizontally (and increases to whatever proportionate height that is.). Same button should also reverse it.
@@ -160,6 +152,20 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Fixed transcript outline generation:
+  - Fixed transcript formatting in controls box outline generation
+  - Removed duplicate outline generation button
+  - Consolidated outline generation to a single button
+  - Fixed 422 Unprocessable Content error in outline generation
+
+### Previous Updates on 1/17/25:
+- Improved transcript controls:
+  - Moved 'Generate Outline' button into transcript controls box
+  - Removed duplicate transcript outline button
+  - Improved control layout and consistency
+  - Streamlined button placement for better UX
+
+### Previous Updates on 1/17/25:
 - Improved Mark Mode stability and caption handling:
   - Added 15-second timeout for caption generation
   - Screenshots now save even if captions timeout
