@@ -8,7 +8,6 @@ const TranscriptViewer = ({
   onTimeClick,
   onAnalysisGenerated
 }) => {
-  const [showTranscript, setShowTranscript] = useState(true);
   const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
   const [error, setError] = useState('');
   const transcriptRef = useRef(null);
@@ -20,7 +19,8 @@ const TranscriptViewer = ({
 
   // Handle auto-scrolling of transcript
   useEffect(() => {
-    if (showTranscript && transcriptRef.current) {
+    if (transcriptRef.current) {
+
       const transcriptElement = transcriptRef.current;
       const timestampElements = transcriptElement.getElementsByClassName('timestamp');
       
@@ -38,7 +38,7 @@ const TranscriptViewer = ({
         }
       }
     }
-  }, [currentTime, showTranscript]);
+  }, [currentTime]);
 
   const analyzeTranscript = async () => {
     if (!transcript.length) return;
@@ -65,23 +65,13 @@ const TranscriptViewer = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <button
-          onClick={() => setShowTranscript(!showTranscript)}
-          className="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-        >
-          {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
-        </button>
-        
-      </div>
-
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
-      {showTranscript && transcript.length > 0 && (
+      {transcript.length > 0 && (
         <div className="border rounded-lg p-4 bg-white overflow-hidden">
           <h2 className="text-lg font-bold mb-4">Transcript</h2>
           <div 

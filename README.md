@@ -152,6 +152,20 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Improved UI visibility control:
+  - Preserved video title and controls when main content is hidden
+  - Separated always-visible elements from hideable content
+  - Enhanced UI clarity and consistency
+  - Maintained key information during content toggling
+
+### Previous Updates on 1/17/25:
+- Consolidated transcript controls:
+  - Removed redundant transcript visibility controls
+  - Unified transcript visibility under the main controls box
+  - Improved overall UI consistency
+  - Removed redundant gray hide/show transcript button
+
+### Previous Updates on 1/17/25:
 - Fixed transcript outline generation:
   - Fixed transcript formatting in controls box outline generation
   - Removed duplicate outline generation button
