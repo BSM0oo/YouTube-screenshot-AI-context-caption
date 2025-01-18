@@ -20,6 +20,7 @@ const EnhancedScreenshotManager = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedScenes, setSelectedScenes] = useState(new Set());
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [processWithCaptions, setProcessWithCaptions] = useState(true);
 
   const formatTime = (seconds) => {
     const date = new Date(seconds * 1000);
@@ -79,7 +80,8 @@ const EnhancedScreenshotManager = ({
       try {
         screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
           video_id: extractVideoId(videoId),
-          timestamp
+          timestamp,
+          generate_caption: processWithCaptions
         });
         console.log("Screenshot response:", screenshotResponse.data); // Add debugging
       } catch (error) {
@@ -87,6 +89,19 @@ const EnhancedScreenshotManager = ({
         throw error;
       }
 
+      // If captions are disabled, return just the screenshot
+      if (!processWithCaptions) {
+        return {
+          image: screenshotResponse.data.image_data,
+          timestamp,
+          caption: '',
+          content_type: 'screenshot_only',
+          notes: '',
+          transcriptContext: ''
+        };
+      }
+
+      // Otherwise, proceed with caption generation
       const contextWindow = 20;
       const relevantTranscript = transcript
         .filter(entry => 
@@ -104,7 +119,6 @@ const EnhancedScreenshotManager = ({
           transcript_context: relevantTranscript,
           prompt: customPrompt
         });
-        console.log("Caption response:", captionResponse.data); // Add debugging
       } catch (error) {
         console.error("Caption API error:", error);
         throw error;
@@ -244,33 +258,45 @@ const EnhancedScreenshotManager = ({
     <div className="space-y-4">
       <div className="bg-white rounded-lg p-4 border">
         <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={screenshotMode === 'single'}
+                  onChange={() => setScreenshotMode('single')}
+                  className="mr-2"
+                />
+                Single Screenshot
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={screenshotMode === 'burst'}
+                  onChange={() => setScreenshotMode('burst')}
+                  className="mr-2"
+                />
+                Burst Mode
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={screenshotMode === 'smart'}
+                  onChange={() => setScreenshotMode('smart')}
+                  className="mr-2"
+                />
+                Smart Detection
+              </label>
+            </div>
+            <div className="h-5 border-l border-gray-300"></div>
             <label className="flex items-center">
               <input
-                type="radio"
-                checked={screenshotMode === 'single'}
-                onChange={() => setScreenshotMode('single')}
-                className="mr-2"
+                type="checkbox"
+                checked={processWithCaptions}
+                onChange={(e) => setProcessWithCaptions(e.target.checked)}
+                className="mr-2 rounded text-blue-600 border-gray-300 focus:ring-blue-500"
               />
-              Single Screenshot
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                checked={screenshotMode === 'burst'}
-                onChange={() => setScreenshotMode('burst')}
-                className="mr-2"
-              />
-              Burst Mode
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                checked={screenshotMode === 'smart'}
-                onChange={() => setScreenshotMode('smart')}
-                className="mr-2"
-              />
-              Smart Detection
+              Generate Captions
             </label>
           </div>
           <button

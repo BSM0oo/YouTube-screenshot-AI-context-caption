@@ -81,10 +81,11 @@ frontend is in the frontend folder
 backend is main.py
 checkout README.md for info on how the files and components are structured
 3) Determine best way to fix each item in the task list and generate an overall plan
-4) Execute the changes for the first change
-5) Test the change by running npm run dev in the frontend folder
-6) Fix any issues found in the test
-7) Let me know status of change, and ask permission to move to the next one.
+4) Execute the changes for the first change. prefer edit file over write file unless completely redoing the majority of the file. after performing multiple edits on a file, always review the modified file to confirm the changes are as we expect.
+5) Review any files with multiple edits from this run.
+6) Test the change by running npm run dev in the frontend folder
+7) Fix any issues found in the test
+8) Let me know status of change, and ask permission to move to the next one.
 
 ## Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.
 
@@ -177,6 +178,15 @@ DONE -Improve the export options. The export to md and html aren't displaying an
 **1/6/25:** 
 1/6/25 DONE
 i want you to use the tools in the youtube_info_extractor.py in PythonExamples folder to improve the web app by adding a section that appends all these details about the video to the bottom of the page, below the generated trasncript outline. I also want a button to hide/show it. We may want to create or modify a component to do this. The components directory currently has NotesManager, ScreenshotGallery, ScreenshotManager, YoutubePlayer, and TranscriptViewer.
+
+## Changelog
+
+### Updates on 1/17/25:
+- Added toggle for caption generation when taking screenshots
+  - Added `processWithCaptions` state to EnhancedScreenshotManager
+  - Modified `captureScreenshot` function to skip caption API calls when disabled
+  - Added UI toggle next to screenshot mode selection
+- Modified VideoRequest model in backend to include `generate_caption` parameter
 
 ### Updates on 12/19/24:
 Here's what has been implemented:

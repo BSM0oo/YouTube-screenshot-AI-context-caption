@@ -70,7 +70,8 @@ class VideoInfo:
 
 class VideoRequest(BaseModel):
     video_id: str
-    timestamp: float
+    timestamp: float 
+    generate_caption: bool = True
 
 class CaptionRequest(BaseModel):
     timestamp: float
@@ -352,6 +353,9 @@ async def capture_screenshot(request: VideoRequest):
     max_retries = 3
     current_try = 0
     
+    # Extract whether to generate captions
+    generate_caption = getattr(request, 'generate_caption', True)
+    
     while current_try < max_retries:
         try:
             current_try += 1
@@ -408,7 +412,13 @@ async def capture_screenshot(request: VideoRequest):
                 base64_screenshot = base64.b64encode(screenshot_bytes).decode()
                 
                 print("Screenshot captured and saved successfully")
-                return {"image_data": f"data:image/png;base64,{base64_screenshot}"}
+                if not generate_caption:
+                    return {"image_data": f"data:image/png;base64,{base64_screenshot}"}
+                    
+                return {
+                    "image_data": f"data:image/png;base64,{base64_screenshot}",
+                    "generate_caption": True
+                }
                 
         except Exception as e:
             print(f"Screenshot attempt {current_try} failed: {str(e)}")
