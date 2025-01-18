@@ -34,7 +34,8 @@ youtube-notes-app/
 - [YouTube Notes App](#youtube-notes-app)
   - [Project Structure](#project-structure)
   - [Features - see below for more info on files](#features---see-below-for-more-info-on-files)
-  - [Improvements roadmap and prompts:](#improvements-roadmap-and-prompts)
+  - [Claude instructions:](#claude-instructions)
+  - [Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.](#improvements-roadmap-and-prompts-fix-one-by-one-and-ask-for-approval-before-going-to-the-next-one)
     - [Ideas:](#ideas)
     - [Completed:](#completed)
     - [Updates on 12/19/24:](#updates-on-121924)
@@ -72,9 +73,30 @@ youtube-notes-app/
 ## Features - see below for more info on files
 
 
-## Improvements roadmap and prompts:
+## Claude instructions:
+1) Use sequential reasoning
+2) Files are found here: 
+'/Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud'
+frontend is in the frontend folder
+backend is main.py
+checkout README.md for info on how the files and components are structured
+3) Determine best way to fix each item in the task list and generate an overall plan
+4) Execute the changes for the first change
+5) Test the change by running npm run dev in the frontend folder
+6) Fix any issues found in the test
+7) Let me know status of change, and ask permission to move to the next one.
+
+## Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.
+
+- FIX: I can't edit the captions. Edit buton sets up the edit box but I can't actually type into the box. 
+- NEW: Add a toggle to process single screenshots without captions vs. with captions. When marked for caption, process the screenshots / context for captions, or when marked for screenshot alone just screenshot them without processing so that just the screenshots are added to the gallery without any further processing. 
+- REMOVE: Get rid of the smart detection and its related code.
+- NEW: Add the ability to capture a GIF (user can determine length)
 1/13/25:
-I want to add a mode for taking screenshots called Mark Mode. When selected, the user gets two new buttons: Mark for Screenshot, Mark for Screenshot + Caption. Each time user clicks mark for Screenshot it records the time stamp of the portion of video. When all video parts are selected, user clicks "Capture marked", and all the marked screenshots are processed for screenshot or screenshot + caption, and then displayed in the gallery. 
+
+- Add a new option for taking screenshots called Mark Mode. When selected, the user gets two new buttons: Mark for Screenshot, Mark for Screenshot + Caption. Each time user clicks mark for Screenshot it records the time stamp of the portion of video. When all video parts are selected, user clicks "Capture marked", and all the marked screenshots are processed for screenshot or screenshot + caption, and then displayed in the gallery. 
+- When marked for caption, process the screenshots / context for captions, or when marked for screenshot alone just screenshot them without processing so that just the screenshots are added to the gallery without any further processing. 
+- NEW FUNCTION: Add a toggle that increases the size of the video to full width of the page borders (not as wide in constarined mode and all the way to the edge of the window in the full width view)
 
  each time there's a portion of the video they want to have a screenshot. there's something about this file that makes the screenshot functionality work perfectly so that it captures at the exact correct time and gets all the information including text on the time point in the video. in my project, one of the components seems to have messed this up so its not always getting the perfect time point, not always getting the image, and sometimes has weird overlays, or is missing the important text overlay that has relevant information for my video.  attached is the correct implementation  here's my frontend directory of my project. review it and the components to figure out what the issue is. /Users/williamsmith/Library/CloudStorage/OneDrive-Personal/Coding OneDrive/youtube-notes-app-clean-Claude-OneDrive-011025-gcloud/frontend  save copies of the incorrect files in an archived folder  insert the changes needed or replace the incorrect files * test the revised version stop at any point if one of your tools doesn't work. use multistep reasoning.
 
