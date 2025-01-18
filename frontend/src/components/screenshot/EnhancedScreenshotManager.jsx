@@ -5,6 +5,7 @@ import ScreenshotModeSelector from './ScreenshotModeSelector';
 import BurstModeControls from './BurstModeControls';
 import MarkModeControls from './MarkModeControls';
 import CaptureControls from './CaptureControls';
+import LabelControls from './LabelControls';
 import { captureScreenshot, extractVideoId } from './screenshotService';
 
 const EnhancedScreenshotManager = ({ 
@@ -27,6 +28,12 @@ const EnhancedScreenshotManager = ({
   const [markedTimestamps, setMarkedTimestamps] = useState([]);
   const [remainingMarks, setRemainingMarks] = useState(0);
 
+  // Label controls state
+  const [enableLabel, setEnableLabel] = useState(false);
+  const [labelText, setLabelText] = useState('');
+  const [fontSize, setFontSize] = useState(48); // Default font size
+  const [textColor, setTextColor] = useState('white'); // Default text color
+
   const handleSingleScreenshot = async () => {
     if (!player) return;
     
@@ -39,7 +46,12 @@ const EnhancedScreenshotManager = ({
         generateCaption: processWithCaptions,
         transcript,
         customPrompt,
-        onPlayVideo: () => player.playVideo()
+        onPlayVideo: () => player.playVideo(),
+        label: enableLabel ? {
+          text: labelText,
+          fontSize: fontSize,
+          color: textColor
+        } : null
       });
       const newScreenshots = [screenshot];
       setScreenshots(prev => [...prev, ...newScreenshots]);
@@ -72,7 +84,11 @@ const EnhancedScreenshotManager = ({
             timestamp,
             generateCaption: processWithCaptions,
             transcript,
-            customPrompt
+            customPrompt,
+            label: enableLabel ? {
+              text: labelText,
+              fontSize: fontSize
+            } : null
           });
           screenshots.push(screenshot);
         } catch (error) {
@@ -132,7 +148,11 @@ const EnhancedScreenshotManager = ({
             timestamp: mark.timestamp,
             generateCaption: mark.withCaption,
             transcript,
-            customPrompt
+            customPrompt,
+            label: enableLabel ? {
+              text: labelText,
+              fontSize: fontSize
+            } : null
           });
 
           // Update UI immediately with this screenshot
@@ -228,6 +248,19 @@ const EnhancedScreenshotManager = ({
           isCleaningUp={isCleaningUp}
           onCleanup={handleCleanup}
         />
+
+        <div className="mt-4 mb-4">
+          <LabelControls
+            enableLabel={enableLabel}
+            setEnableLabel={setEnableLabel}
+            labelText={labelText}
+            setLabelText={setLabelText}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
+            textColor={textColor}
+            setTextColor={setTextColor}
+          />
+        </div>
 
         {screenshotMode === 'burst' && (
           <BurstModeControls 

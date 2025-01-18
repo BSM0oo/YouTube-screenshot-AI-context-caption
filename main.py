@@ -22,6 +22,7 @@ import numpy as np
 from PIL import Image, ImageOps
 import pytesseract
 import io
+from PIL import ImageDraw, ImageFont
 import traceback
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -123,10 +124,16 @@ class VideoInfo:
 MAX_SCREENSHOT_AGE_DAYS = 7  # Maximum age of screenshots before cleanup
 MAX_SCREENSHOTS_PER_VIDEO = 50  # Maximum number of screenshots to keep per video
 
+class LabelConfig(BaseModel):
+    text: str
+    fontSize: int
+    color: str = 'white' # Default to white text
+
 class VideoRequest(BaseModel):
     video_id: str
     timestamp: float 
     generate_caption: bool = True
+    label: Optional[LabelConfig] = None
 
 class CaptionRequest(BaseModel):
     timestamp: float
@@ -370,6 +377,46 @@ async def capture_screenshot(request: VideoRequest):
                     type='png',
                     clip={'x': 0, 'y': 0, 'width': 1280, 'height': 720}
                 )
+                
+                # Add label if requested
+                if request.label:
+                    # Open image with Pillow
+                    image = Image.open(io.BytesIO(screenshot_bytes))
+                    draw = ImageDraw.Draw(image)
+                    
+                    # Load a font with the requested size
+                    try:
+                        font = ImageFont.truetype('/System/Library/Fonts/Helvetica.ttc', request.label.fontSize)
+                    except:
+                        # Fallback to default font if Helvetica not found
+                        font = ImageFont.load_default()
+                        font_size = request.label.fontSize
+                    
+                    # Calculate text size and position
+                    text = request.label.text
+                    bbox = draw.textbbox((0, 0), text, font=font)
+                    text_width = bbox[2] - bbox[0]
+                    text_height = bbox[3] - bbox[1]
+                    
+                    # Center text in upper portion of image
+                    x = (image.width - text_width) // 2
+                    y = image.height // 4 - text_height // 2
+                    
+                    # Draw white text with black outline for visibility
+                    outline_width = max(1, request.label.fontSize // 25)
+                    for adj in range(-outline_width, outline_width + 1):
+                        for offy in range(-outline_width, outline_width + 1):
+                            if adj == 0 and offy == 0:
+                                continue
+                            # Always use black outline
+                            draw.text((x + adj, y + offy), text, font=font, fill='black')
+                    # Use the configured text color
+                    draw.text((x, y), text, font=font, fill=request.label.color)
+                    
+                    # Convert back to bytes
+                    buffer = io.BytesIO()
+                    image.save(buffer, format='PNG')
+                    screenshot_bytes = buffer.getvalue()
                 
                 # Optimize the image
                 image = Image.open(io.BytesIO(screenshot_bytes))

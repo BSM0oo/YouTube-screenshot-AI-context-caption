@@ -71,6 +71,10 @@ current branch = claude_fixes_and_marked_functionality
 
 ## Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.
 
+1/17/25:
+NEW: add a feature during mark mode that allows the user to capture screenshot and add large font text onto the image or in front of the image so it appears part of the image. so there could be a toggle box next to generate captions box called "Label Image". When selected a text box appears that allows the user to enter text to overlay on the image so that the user can quickly understand the video's point. Font size should be 3-4x the size of a typical title heading aka taking up about 25% of the vertical area of the image. Maybe there could be a sample overlay that shows the text size with an input box where the user can enter the font size. 
+
+
 - FIX: I can't edit the captions. Edit buton sets up the edit box but I can't actually type into the box. 
 - NEW: Add a toggle to process single screenshots without captions vs. with captions. When marked for caption, process the screenshots / context for captions, or when marked for screenshot alone just screenshot them without processing so that just the screenshots are added to the gallery without any further processing. 
 - REMOVE: Get rid of the smart detection and its related code.
@@ -150,6 +154,36 @@ DONE -Improve the export options. The export to md and html aren't displaying an
 i want you to use the tools in the youtube_info_extractor.py in PythonExamples folder to improve the web app by adding a section that appends all these details about the video to the bottom of the page, below the generated trasncript outline. I also want a button to hide/show it. We may want to create or modify a component to do this. The components directory currently has NotesManager, ScreenshotGallery, ScreenshotManager, YoutubePlayer, and TranscriptViewer.
 
 ## Changelog
+
+### Updates on 1/17/25:
+- Added image labeling feature:
+  - New "Label Image" toggle in screenshot controls
+  - Customizable font size for labels
+  - Live preview of label appearance
+  - White text with black outline for visibility
+  - Labels are centered in upper portion of images
+  - Custom font support with fallback option
+- More updates 1/17/25:
+  The label feature allows users to add text overlays to screenshots with:
+Toggle switch to enable/disable labeling
+Input field for the label text
+Font size control
+Live preview of how the label will look
+White text with black outline for visibility on any background
+
+The backend processing:
+Adds the text overlay to the screenshot before optimization
+Centers the text in the upper portion of the image
+Handles font loading with fallback options
+Maintains image quality while adding the tex
+
+The implementation follows best practices:
+Proper state management
+Clear separation of concerns
+Error handling
+Responsive design
+Accessibility support through shadcn/ui components
+
 
 ### Updates on 1/17/25:
 - Improved UI visibility control:

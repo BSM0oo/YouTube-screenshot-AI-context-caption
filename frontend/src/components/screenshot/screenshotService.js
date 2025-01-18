@@ -18,7 +18,8 @@ export const captureScreenshot = async ({
   generateCaption,
   transcript,
   customPrompt,
-  onPlayVideo
+  onPlayVideo,
+  label
 }) => {
   try {
     if (!player) throw new Error('Player not initialized');
@@ -38,7 +39,8 @@ export const captureScreenshot = async ({
       screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
         video_id: extractVideoId(videoId),
         timestamp,
-        generate_caption: generateCaption
+        generate_caption: generateCaption,
+        label: label
       });
     } catch (error) {
       console.error("Screenshot API error:", error);
