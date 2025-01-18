@@ -62,7 +62,8 @@ checkout README.md for info on how the files and components are structured
 6) Test the change by running npm run dev in the frontend folder
 7) Fix any issues found in the test
 8) add the changes you made to the changelog in the readme.md file
-9) Let me know status of change and then ask permission to move to the next one. also ask me if you should push your latest changes to the github repo. push to branch below if appropriate. Suggest a new branch if appropriate. Suggest reverting to main branch where appropriate. 
+9) Let me know status of change and then ask permission to move to the next one. 
+10) also ask me if you should push your latest changes to the github repo. push to branch below if appropriate. Suggest a new branch if appropriate. Suggest reverting to main branch where appropriate. 
 Repo info: git push origin claude_fixes_and_marked_functionality
 origin  https://github.com/BSM0oo/YouTube-screenshot-AI-context-caption.git (fetch)
 origin  https://github.com/BSM0oo/YouTube-screenshot-AI-context-caption.git (push)
@@ -159,6 +160,15 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Added screenshot optimization features:
+  - Added WebP image compression (80% quality) to reduce file sizes
+  - Added automatic cleanup of screenshots older than 7 days
+  - Limited maximum screenshots per video to 50
+  - Added screenshot pagination with 12 screenshots per page
+  - Added loading states and error handling
+  - Added periodic cleanup (every 5 minutes)
+
+### Previous Updates on 1/17/25:
 - Refactored screenshot functionality:
   - Split EnhancedScreenshotManager into smaller, focused components
   - Created new /components/screenshot directory

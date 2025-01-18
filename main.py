@@ -15,10 +15,11 @@ from modules.gif_capture import GifCapture
 import yt_dlp
 import re
 from urllib.parse import urlparse
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import pytesseract
 import io
 import traceback
@@ -33,6 +34,52 @@ from googleapiclient.errors import HttpError
 
 # Load environment variables
 load_dotenv()
+
+def cleanup_old_screenshots():
+    """Clean up old screenshots based on age and count limits"""
+    try:
+        # Get current time
+        now = datetime.now()
+        cleanup_threshold = now - timedelta(days=MAX_SCREENSHOT_AGE_DAYS)
+        
+        # Group files by video ID
+        video_files = {}
+        for file_path in SCREENSHOTS_DIR.glob("yt_*"):
+            if not file_path.is_file():
+                continue
+                
+            # Parse video ID from filename
+            match = re.match(r"yt_([^_]+)_", file_path.name)
+            if not match:
+                continue
+                
+            video_id = match.group(1)
+            file_stat = file_path.stat()
+            file_time = datetime.fromtimestamp(file_stat.st_mtime)
+            
+            # Check if file is too old
+            if file_time < cleanup_threshold:
+                file_path.unlink()
+                continue
+                
+            if video_id not in video_files:
+                video_files[video_id] = []
+            video_files[video_id].append((file_path, file_time))
+        
+        # Clean up excess files per video
+        for video_id, files in video_files.items():
+            if len(files) > MAX_SCREENSHOTS_PER_VIDEO:
+                # Sort by modification time, newest first
+                sorted_files = sorted(files, key=lambda x: x[1], reverse=True)
+                
+                # Remove oldest files exceeding the limit
+                for file_path, _ in sorted_files[MAX_SCREENSHOTS_PER_VIDEO:]:
+                    file_path.unlink()
+                    
+        return {"message": "Cleanup completed successfully"}
+    except Exception as e:
+        logger.error(f"Error during screenshot cleanup: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Initialize Anthropic client
 anthropic = Anthropic(
@@ -71,6 +118,10 @@ class VideoInfo:
     description: str
     chapters: List[Dict[str, str]]
     links: List[str]
+
+# Constants for screenshot management
+MAX_SCREENSHOT_AGE_DAYS = 7  # Maximum age of screenshots before cleanup
+MAX_SCREENSHOTS_PER_VIDEO = 50  # Maximum number of screenshots to keep per video
 
 class VideoRequest(BaseModel):
     video_id: str
@@ -255,11 +306,22 @@ async def get_transcript(video_id: str):
             error_msg = "No transcript/captions available for this video"
         raise HTTPException(status_code=404, detail=error_msg)
 
+@app.post("/api/cleanup-screenshots")
+async def trigger_cleanup():
+    """Manually trigger screenshot cleanup"""
+    return cleanup_old_screenshots()
+
 @app.post("/api/capture-screenshot")
 async def capture_screenshot(request: VideoRequest):
     """Capture a screenshot from a YouTube video using Playwright"""
     max_retries = 3
     current_try = 0
+    
+    # Run cleanup before capturing new screenshot
+    try:
+        cleanup_old_screenshots()
+    except Exception as e:
+        logger.warning(f"Cleanup failed but continuing with capture: {str(e)}")
     
     # Extract whether to generate captions
     generate_caption = getattr(request, 'generate_caption', True)
@@ -309,22 +371,30 @@ async def capture_screenshot(request: VideoRequest):
                     clip={'x': 0, 'y': 0, 'width': 1280, 'height': 720}
                 )
                 
+                # Optimize the image
+                image = Image.open(io.BytesIO(screenshot_bytes))
+                
+                # Convert to WebP format with optimized settings
+                webp_buffer = io.BytesIO()
+                image.save(webp_buffer, 'WEBP', quality=80, method=6)
+                optimized_bytes = webp_buffer.getvalue()
+                
                 # Save to data directory
                 timestamp_str = f"{int(request.timestamp)}"
-                file_path = SCREENSHOTS_DIR / f"yt_{request.video_id}_{timestamp_str}.png"
+                file_path = SCREENSHOTS_DIR / f"yt_{request.video_id}_{timestamp_str}.webp"
                 
                 with open(file_path, "wb") as f:
-                    f.write(screenshot_bytes)
+                    f.write(optimized_bytes)
                 
                 # Convert to base64 for response
-                base64_screenshot = base64.b64encode(screenshot_bytes).decode()
+                base64_screenshot = base64.b64encode(optimized_bytes).decode()
                 
                 print("Screenshot captured and saved successfully")
                 if not generate_caption:
-                    return {"image_data": f"data:image/png;base64,{base64_screenshot}"}
+                    return {"image_data": f"data:image/webp;base64,{base64_screenshot}"}
                     
                 return {
-                    "image_data": f"data:image/png;base64,{base64_screenshot}",
+                    "image_data": f"data:image/webp;base64,{base64_screenshot}",
                     "generate_caption": True
                 }
                 

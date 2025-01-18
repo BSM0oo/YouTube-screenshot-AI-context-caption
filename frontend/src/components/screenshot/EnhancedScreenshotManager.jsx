@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import GifCaptureManager from '../GifCaptureManager';
+import ScreenshotGallery from './ScreenshotGallery';
 import ScreenshotModeSelector from './ScreenshotModeSelector';
 import BurstModeControls from './BurstModeControls';
 import MarkModeControls from './MarkModeControls';
@@ -11,7 +12,8 @@ const EnhancedScreenshotManager = ({
   player, 
   transcript,
   onScreenshotsTaken,
-  customPrompt 
+  customPrompt,
+  onScreenshotEdit
 }) => {
   const [screenshotMode, setScreenshotMode] = useState('single');
   const [burstCount, setBurstCount] = useState(3);
@@ -19,6 +21,7 @@ const EnhancedScreenshotManager = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [processingScreenshot, setProcessingScreenshot] = useState(false);
   const [error, setError] = useState('');
+  const [screenshots, setScreenshots] = useState([]);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [processWithCaptions, setProcessWithCaptions] = useState(true);
   const [markedTimestamps, setMarkedTimestamps] = useState([]);
@@ -37,7 +40,9 @@ const EnhancedScreenshotManager = ({
         customPrompt,
         onPlayVideo: () => player.playVideo()
       });
-      onScreenshotsTaken([screenshot]);
+      const newScreenshots = [screenshot];
+      setScreenshots(prev => [...prev, ...newScreenshots]);
+      onScreenshotsTaken(newScreenshots);
     } catch (error) {
       setError('Failed to capture screenshot: ' + error.message);
     } finally {
@@ -75,6 +80,7 @@ const EnhancedScreenshotManager = ({
       }
       
       if (screenshots.length > 0) {
+        setScreenshots(prev => [...prev, ...screenshots]);
         onScreenshotsTaken(screenshots);
       }
       
@@ -122,6 +128,7 @@ const EnhancedScreenshotManager = ({
       }
       
       if (screenshots.length > 0) {
+        setScreenshots(prev => [...prev, ...screenshots]);
         onScreenshotsTaken(screenshots);
         setMarkedTimestamps([]); // Clear marks after successful capture
       }
@@ -169,6 +176,10 @@ const EnhancedScreenshotManager = ({
 
   return (
     <>
+      <ScreenshotGallery
+        initialScreenshots={screenshots}
+        onScreenshotEdit={onScreenshotEdit}
+      />
       <div className="bg-white rounded-lg p-4 border">
         <ScreenshotModeSelector 
           screenshotMode={screenshotMode}
