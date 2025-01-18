@@ -20,6 +20,8 @@ const EnhancedScreenshotManager = ({
   const [error, setError] = useState('');
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [processWithCaptions, setProcessWithCaptions] = useState(true);
+  const [markedTimestamps, setMarkedTimestamps] = useState([]);
+  const [isMarkMode, setIsMarkMode] = useState(false);
 
   const formatTime = (seconds) => {
     const date = new Date(seconds * 1000);
@@ -171,6 +173,47 @@ const EnhancedScreenshotManager = ({
     }]);
   };
 
+    const handleMarkForScreenshot = () => {
+    if (!player) return;
+    const currentTime = player.getCurrentTime();
+    setMarkedTimestamps(prev => [...prev, { timestamp: currentTime, withCaption: processWithCaptions }]);
+  };
+
+  const handleCaptureMarked = async () => {
+    if (!player || markedTimestamps.length === 0) return;
+    
+    try {
+      setProcessingScreenshot(true);
+      setError('');
+      
+      const screenshots = [];
+      for (const mark of markedTimestamps) {
+        try {
+          const screenshot = await captureScreenshot(mark.timestamp);
+          screenshots.push(screenshot);
+        } catch (error) {
+          console.error(`Failed to capture marked screenshot:`, error);
+        }
+      }
+      
+      if (screenshots.length > 0) {
+        onScreenshotsTaken(screenshots);
+        setMarkedTimestamps([]); // Clear marks after successful capture
+      }
+      
+    } catch (error) {
+      console.error('Marked capture error:', error);
+      setError('Failed to capture marked screenshots: ' + error.message);
+    } finally {
+      setProcessingScreenshot(false);
+      player.playVideo();
+    }
+  };
+
+  const clearMarkedTimestamps = () => {
+    setMarkedTimestamps([]);
+  };
+
   const handleCleanup = () => {
     setIsCleaningUp(true);
     try {
@@ -215,6 +258,19 @@ const EnhancedScreenshotManager = ({
                   className="mr-2"
                 />
                 GIF Mode
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={screenshotMode === 'mark'}
+                  onChange={() => {
+                    setScreenshotMode('mark');
+                    setIsMarkMode(true);
+                    clearMarkedTimestamps();
+                  }}
+                  className="mr-2"
+                />
+                Mark Mode
               </label>
             </div>
             <div className="h-5 border-l border-gray-300"></div>
@@ -268,12 +324,46 @@ const EnhancedScreenshotManager = ({
           </div>
         )}
 
-        <button
-          onClick={
-            screenshotMode === 'single'
-              ? handleSingleScreenshot
-              : handleBurstScreenshots
-          }
+        {screenshotMode === 'mark' ? (
+          <div className="space-y-4">
+            <button
+              onClick={handleMarkForScreenshot}
+              className="w-full bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
+              disabled={processingScreenshot || !player}
+            >
+              Mark for Screenshot {processWithCaptions ? '+ Caption' : 'Only'}
+            </button>
+            
+            {markedTimestamps.length > 0 && (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  {markedTimestamps.length} timestamp{markedTimestamps.length !== 1 ? 's' : ''} marked
+                </div>
+                <button
+                  onClick={handleCaptureMarked}
+                  className="w-full bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={processingScreenshot || !player}
+                >
+                  Capture All Marked Screenshots
+                </button>
+                <button
+                  onClick={clearMarkedTimestamps}
+                  className="w-full bg-red-500 text-white px-4 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={processingScreenshot}
+                >
+                  Clear Marked Timestamps
+                </button>
+              </div>
+            )}
+        )}
+          </div>
+        ) : (
+          <button
+            onClick={
+              screenshotMode === 'single'
+                ? handleSingleScreenshot
+                : handleBurstScreenshots
+            }
           className="w-full bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
           disabled={processingScreenshot || !player || isCapturing}
         >

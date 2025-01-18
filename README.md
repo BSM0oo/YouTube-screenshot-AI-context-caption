@@ -7,70 +7,43 @@ A web application for taking structured notes while watching YouTube videos. Fea
 
 ## Project Structure
 
-```
 youtube-notes-app/
 ├── frontend/                # React frontend application
 │   ├── src/
 │   │   ├── components/     # React components
-│   │   │   ├── YouTubePlayer.jsx      # Video player component
-│   │   │   ├── EnhancedScreenshotManager.jsx  # Screenshot capture handling
-│   │   │   ├── TranscriptViewer.jsx   # Transcript display and navigation
-│   │   │   ├── NotesManager.jsx       # Notes and export management
-│   │   │   ├── EnhancedScreenshotGallery.jsx  # Screenshot display and organization
-│   │   │   ├── VideoInfoViewer.jsx    # Video metadata display
-│   │   │   └── FullTranscriptViewer.jsx # Full transcript display
-│   │   ├── styles/        # Styling
-│   │   │   └── ExportStyles.css       # Export and print styling
-│   │   ├── utils/         # Utility functions
-│   │   │   └── exportUtils.js         # Export generation utilities
-│   │   ├── App.jsx        # Main application component
-│   │   ├── config.js      # Configuration settings
-│   │   └── main.jsx       # Application entry point
+│   │   │   ├── YouTubePlayer.jsx            # Video player component
+│   │   │   ├── EnhancedScreenshotManager.jsx # Screenshot capture handling
+│   │   │   ├── TranscriptViewer.jsx         # Transcript display and navigation
+│   │   │   ├── NotesManager.jsx             # Notes and export management
+│   │   │   ├── GifCaptureManager.jsx        # GIF capture functionality
+│   │   │   ├── DraggableGalleryGrid.jsx     # Draggable grid layout
+│   │   │   ├── EnhancedScreenshotGallery.jsx # Screenshot organization
+│   │   │   ├── GalleryControls.jsx          # Gallery control buttons
+│   │   │   ├── GalleryGrid.jsx              # Grid layout component
+│   │   │   ├── PromptResponseCard.jsx       # AI response display
+│   │   │   ├── ScreenshotCard.jsx           # Screenshot display card
+│   │   │   ├── TranscriptPrompt.jsx         # Transcript interaction
+│   │   │   ├── VideoInfoViewer.jsx          # Video metadata display
+│   │   │   └── FullTranscriptViewer.jsx     # Full transcript display
+│   │   ├── components/ui/  # Shadcn UI components
+│   │   │   ├── button.jsx  # Button component
+│   │   │   ├── card.jsx    # Card component
+│   │   │   ├── input.jsx   # Input component
+│   │   │   └── label.jsx   # Label component
+│   │   ├── styles/         # Styling
+│   │   │   ├── globals.css # Global styles and Tailwind
+│   │   │   └── ExportStyles.css # Export and print styling
+│   │   ├── utils/          # Utility functions
+│   │   │   └── exportUtils.js # Export generation utilities
+│   │   ├── App.jsx         # Main application component
+│   │   ├── config.js       # Configuration settings
+│   │   └── main.jsx        # Application entry point
+├── modules/                # Backend modules
+│   └── gif_capture.py      # GIF capture functionality
 ├── main.py                 # Python backend server
 └── README.md              # Documentation
 
-```
 
-- [YouTube Notes App](#youtube-notes-app)
-  - [Project Structure](#project-structure)
-  - [Features - see below for more info on files](#features---see-below-for-more-info-on-files)
-  - [Claude instructions:](#claude-instructions)
-  - [Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.](#improvements-roadmap-and-prompts-fix-one-by-one-and-ask-for-approval-before-going-to-the-next-one)
-    - [Ideas:](#ideas)
-    - [Completed:](#completed)
-  - [Changelog](#changelog)
-    - [Updates on 1/17/25:](#updates-on-11725)
-    - [Updates on 1/18/25:](#updates-on-11825)
-    - [Updates on 12/19/24:](#updates-on-121924)
-  - [Known Issues and Limitations](#known-issues-and-limitations)
-  - [Future Improvements](#future-improvements)
-    - [Core Functionality](#core-functionality)
-    - [Export Options](#export-options)
-  - [Component Architecture](#component-architecture)
-  - [Export Formats](#export-formats)
-    - [Markdown Export](#markdown-export)
-    - [HTML Export](#html-export)
-    - [PDF Export (via Print)](#pdf-export-via-print)
-  - [Setup and Development](#setup-and-development)
-  - [Network Access](#network-access)
-  - [Component Architecture](#component-architecture-1)
-  - [State Management](#state-management)
-  - [Backend Integration](#backend-integration)
-  - [Setup and Development](#setup-and-development-1)
-  - [Network Access](#network-access-1)
-  - [Known Issues and Limitations](#known-issues-and-limitations-1)
-  - [Future Improvements](#future-improvements-1)
-- [How to build the docker images and deploy to gcloud](#how-to-build-the-docker-images-and-deploy-to-gcloud)
-  - [to test locally we added static folder and from root directory u can use:](#to-test-locally-we-added-static-folder-and-from-root-directory-u-can-use)
-    - [Docker Instructions:](#docker-instructions)
-- [Docker commands (u can do as script if u want)](#docker-commands-u-can-do-as-script-if-u-want)
-  - [create your app service accounts and give them privileges:](#create-your-app-service-accounts-and-give-them-privileges)
-- [Create a service account for Cloud Run](#create-a-service-account-for-cloud-run)
-- [Grant necessary roles](#grant-necessary-roles)
-- [Navigate to your project directory](#navigate-to-your-project-directory)
-- [Submit the build to Cloud Build](#submit-the-build-to-cloud-build)
-- [Deploy to Cloud Run](#deploy-to-cloud-run)
-- [after deployment monitor your app:](#after-deployment-monitor-your-app)
 
 
 ## Features - see below for more info on files
@@ -103,6 +76,7 @@ current branch = claude_fixes_and_marked_functionality
 - NEW: Add the ability to capture a GIF (user can determine length). Create this as a new component for the frontend, and a new module for the backend (main.py getting too long otherwise i think).
 - 
 1/13/25:
+Features to add or fix:
 - Mark mode: Add a new option for taking screenshots called Mark Mode. When selected, the user gets two new buttons: Mark for Screenshot, Mark for Screenshot + Caption. Each time user clicks mark for Screenshot it records the time stamp of the portion of video. When all video parts are selected, user clicks "Capture marked", and all the marked screenshots are processed for screenshot or screenshot + caption, and then displayed in the gallery. 
 - When marked for caption, process the screenshots / context for captions, or when marked for screenshot alone just screenshot them without processing so that just the screenshots are added to the gallery without any further processing. 
 - NEW FUNCTION: Add a toggle that increases the size of the video to full width of the page borders (not as wide in constarined mode and all the way to the edge of the window in the full width view)
@@ -135,10 +109,16 @@ add a button that expands the size of the video player to fill the screen horizo
 1/8/25:
 The video information box has rich formatting with headings displayed appropriately etc. - the Generated transcript outline box does not. I think its b/c the generated transcript outline box is markdown that hasn't been rendered.
 
+## More Future features and improvements: ideas for features and improvements for this app? 
 
+1) Sometimes it provides captions of the screenshots that aren't so useful and need more context and a unifying topic heading (analogous to a slide title). 
 
+Maybe expanding the context and focusing on the topic that's fully captured in the context would be best (for example if it contains all of topic B and a little of topic A and C, it should caption a headline indicating topic B and the three bullet points explaining it. 
 
-### Ideas:
+2) It would also be cool if it user could click a button to have it automatically generate screenshots in parts of videos with a scene change or where there was a change in topic or where letters were shown on screen.
+
+3) it would also be cool to screenshot any parts of video with text if the user clicks a button to have it do this. So if i was watching a video and saw some text pop up in a few scenes, i'd click the button and it would screenshot all the parts of video with differnt text. 
+
 **Enhanced Screenshot and Caption System:**
 Implement topic-based contextual analysis for better captions
 Add hierarchical caption structure (main topic → subtopics → details)
@@ -161,17 +141,6 @@ Key visual elements (diagrams, charts)
 
 Preview strip showing detected scenes/content
 
-what are some ideas for features and improvements for this app? 
-
-Some general thoughts from me: 
-
-1) Sometimes it provides captions of the screenshots that aren't so useful and need more context and a unifying topic heading (analogous to a slide title). 
-
-Maybe expanding the context and focusing on the topic that's fully captured in the context would be best (for example if it contains all of topic B and a little of topic A and C, it should caption a headline indicating topic B and the three bullet points explaining it. 
-
-2) It would also be cool if it user could click a button to have it automatically generate screenshots in parts of videos with a scene change or where there was a change in topic. 
-
-3) it would also be cool to screenshot any parts of video with text if the user clicks a button to have it do this. So if i was watching a video and saw some text pop up in a few scenes, i'd click the button and it would screenshot all the parts of video with differnt text. 
 
 ### Completed:
 ** 1/6/25 ** :
@@ -190,6 +159,13 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 ### Updates on 1/17/25:
+- Added Mark Mode for screenshots:
+  - New screenshot mode for marking multiple timestamps
+  - Added UI for marking timestamps and capturing all marked points
+  - Integrated with existing caption toggle functionality
+  - Added clear functionality for marked timestamps
+  - Improved state management for marked screenshots
+
 - Fixed shadcn/ui component integration:
   - Added path alias configuration in vite.config.js
   - Created UI components directory with card, button, input, and label components
