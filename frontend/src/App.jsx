@@ -11,6 +11,7 @@ import usePersistedState from './hooks/usePersistedState';
 import { API_BASE_URL } from './config';
 import ReactMarkdown from 'react-markdown';
 import TranscriptPrompt from './components/TranscriptPrompt';
+import VideoControls from './components/VideoControls';
 
 const printStyles = `
   @media print {
@@ -320,27 +321,17 @@ const App = () => {
         {/* Main content section - can be hidden */}
         {isMainContentVisible && (
           <>
-            
-            <form onSubmit={handleVideoSubmit} className="mb-4 w-full">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={videoId}
-                    onChange={(e) => setVideoId(e.target.value)}
-                    placeholder="Enter YouTube Video URL"
-                    className="p-2 border rounded text-sm sm:text-base w-full"
-                  />
-                </div>
-                <button 
-                  type="submit" 
-                  className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-                  disabled={loading}
-                >
-                  {loading ? 'Loading...' : 'Load Video'}
-                </button>
-              </div>
-            </form>
+            <VideoControls
+              onLoadVideo={(url) => {
+                setVideoId(url);
+                handleVideoSubmit({ preventDefault: () => {} });
+              }}
+              onToggleFullWidth={() => setIsFullWidth(!isFullWidth)}
+              onClearData={clearStoredData}
+              isFullWidth={isFullWidth}
+              eraseLocalFiles={eraseFiles}
+              setEraseLocalFiles={setEraseFiles}
+            />
 
             {/* Main content grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
