@@ -19,16 +19,21 @@ const LabelControls = ({
 
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="label-toggle"
-            checked={enableLabel}
-            onCheckedChange={setEnableLabel}
-          />
-          <Label htmlFor="label-toggle">Label Image</Label>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="label-toggle"
+              checked={enableLabel}
+              onCheckedChange={setEnableLabel}
+            />
+            <Label htmlFor="label-toggle">Label Image</Label>
+          </div>
+          <div className="h-6 border-l border-gray-300"></div>
+          <div className="flex-1">
+            {renderCaptureButton && renderCaptureButton()}
+          </div>
         </div>
-        {renderCaptureButton && renderCaptureButton()}
       </div>
 
       {enableLabel && (

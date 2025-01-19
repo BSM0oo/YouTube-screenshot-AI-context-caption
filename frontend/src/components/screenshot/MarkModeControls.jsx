@@ -13,13 +13,15 @@ const MarkModeControls = ({
 }) => {
   return (
     <div className="space-y-4">
-      <Button
-        onClick={onMark}
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-        disabled={processingScreenshot || disabled}
-      >
-        Mark for Screenshot {processWithCaptions ? '+ Caption' : 'Only'}
-      </Button>
+      <div className="flex items-center gap-4">
+        <Button
+          onClick={onMark}
+          className="min-w-[200px] bg-blue-500 hover:bg-blue-600 text-white"
+          disabled={processingScreenshot || disabled}
+        >
+          Mark for Screenshot {processWithCaptions ? '+ Caption' : 'Only'}
+        </Button>
+      </div>
       
       {markedTimestamps.length > 0 && (
         <div className="space-y-4">

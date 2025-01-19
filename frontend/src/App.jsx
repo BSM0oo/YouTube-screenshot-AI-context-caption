@@ -44,15 +44,26 @@ const appStyles = `
   .content-container {
     width: 100%;
     max-width: 100vw;
-    padding: 1rem;
+    padding: 0.5rem;
     margin: 0;
     box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .content-container.constrained {
     max-width: 80rem;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 0.5rem;
+    padding-bottom: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .content-container {
+      padding: 1rem;
+    }
+    .content-container.constrained {
+      padding: 2rem;
+    }
   }
 
   .video-container {
@@ -275,40 +286,15 @@ const App = () => {
       <div className={`content-container ${!isFullWidth ? 'constrained' : ''}`}>
         {/* Title section - always visible */}
         <div className="flex flex-col w-full mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start w-full">
-            <div className="flex flex-col w-full sm:w-auto">
-              <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
-              {videoInfo?.title && (
-                <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg w-full sm:w-auto">
-                  <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
-                    {videoInfo.title}
-                  </h2>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
-              <button
-                onClick={() => setIsFullWidth(!isFullWidth)}
-                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
-              >
-                {isFullWidth ? 'Constrained View' : 'Full Width View'}
-              </button>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={eraseFiles}
-                  onChange={(e) => setEraseFiles(e.target.checked)}
-                  className="form-checkbox h-4 w-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-600">Erase local files on clear</span>
-              </label>
-              <button
-                onClick={clearStoredData}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-              >
-                Clear All Data
-              </button>
-            </div>
+          <div className="flex flex-col w-full">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-3">YouTube Notes App</h1>
+          {videoInfo?.title && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
+          {videoInfo.title}
+          </h2>
+          </div>
+          )}
           </div>
         </div>
 
@@ -334,7 +320,7 @@ const App = () => {
             />
 
             {/* Main content grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4 w-full">
               {/* Left Column */}
               <div className="space-y-4 flex flex-col">
                 {/* Video Container */}

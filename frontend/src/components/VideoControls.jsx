@@ -20,9 +20,9 @@ const VideoControls = ({
   };
 
   return (
-    <Card className="p-4 mb-4 bg-white shadow-sm">
-      <div className="flex flex-col lg:flex-row items-center gap-4">
-        <form onSubmit={handleSubmit} className="flex-1 w-full">
+    <Card className="p-2 sm:p-4 mb-4 bg-white shadow-sm overflow-hidden">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+        <form onSubmit={handleSubmit} className="flex-1 w-full mb-2 sm:mb-0">
           <div className="flex gap-2">
             <div className="flex-1">
               <Input
@@ -39,7 +39,7 @@ const VideoControls = ({
           </div>
         </form>
 
-        <div className="flex items-center gap-4 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <Button
             onClick={onToggleFullWidth}
             variant="secondary"

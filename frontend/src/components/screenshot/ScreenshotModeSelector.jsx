@@ -17,9 +17,9 @@ const ScreenshotModeSelector = ({
   };
 
   return (
-    <div className="flex justify-between items-center mb-4">
-      <div className="flex items-center gap-4">
-        <div className="flex gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+        <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-4 w-full sm:w-auto">
           <label className="flex items-center">
             <input
               type="radio"

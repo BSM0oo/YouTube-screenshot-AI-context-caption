@@ -12,7 +12,7 @@ const CaptureControls = ({
   return (
     <Button
       onClick={onCapture}
-      className="w-full bg-green-500 text-white hover:bg-green-600 mt-4"
+      className="min-w-[180px] bg-green-500 text-white hover:bg-green-600"
       disabled={disabled || processing}
     >
       {processing ? (

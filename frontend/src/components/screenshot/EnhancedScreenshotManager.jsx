@@ -238,7 +238,7 @@ const EnhancedScreenshotManager = ({
         initialScreenshots={screenshots}
         onScreenshotEdit={onScreenshotEdit}
       />
-      <div className="bg-white rounded-lg p-4 border">
+      <div className="bg-white rounded-lg p-2 sm:p-4 border overflow-hidden">
         <ScreenshotModeSelector 
           screenshotMode={screenshotMode}
           setScreenshotMode={setScreenshotMode}
@@ -249,7 +249,7 @@ const EnhancedScreenshotManager = ({
           onCleanup={handleCleanup}
         />
 
-        <div className="mt-4 mb-4">
+        <div className="mt-2 sm:mt-4 mb-2 sm:mb-4 space-y-2 sm:space-y-4">
           <LabelControls
             enableLabel={enableLabel}
             setEnableLabel={setEnableLabel}
