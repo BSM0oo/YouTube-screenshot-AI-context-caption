@@ -156,6 +156,17 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 ## take a look at the VideoControls.jsx that was created and maybe use that. I created a backup called Enhanced_VideoControl.jsx
 ### Updates on 1/19/25:
+- Fixed GIF capture functionality:
+  - Added retry mechanism for video downloads
+  - Improved error handling and user feedback
+  - Added detailed status messages during capture
+  - Enhanced input validation
+  - Added better cleanup of temporary files
+  - Fixed 403 Forbidden error with YouTube downloads
+  - Added recommendations for duration and FPS
+  - Improved error messages and status updates
+
+### Previous Updates on 1/19/25:
 - Removed duplicate controls:
   - Consolidated video controls into VideoControls component
   - Removed redundant full-width toggle
