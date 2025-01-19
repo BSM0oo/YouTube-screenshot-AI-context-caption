@@ -12,6 +12,29 @@ import { API_BASE_URL } from './config';
 import ReactMarkdown from 'react-markdown';
 import TranscriptPrompt from './components/TranscriptPrompt';
 import VideoControls from './components/VideoControls';
+import SaveContentButton from './components/SaveContentButton';
+
+// Hook to detect if user has scrolled near bottom
+const useNearBottom = () => {
+  const [isNearBottom, setIsNearBottom] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY;
+      const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+      
+      // Show button when within 1000px of bottom
+      setIsNearBottom(distanceFromBottom < 1000);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return isNearBottom;
+};
 
 const printStyles = `
   @media print {
@@ -90,6 +113,8 @@ const clearServerState = async (eraseFiles) => {
 };
 
 const App = () => {
+  // Add new state for showing save button
+  const isNearBottom = useNearBottom();
   // Add new state for full-width mode
   const [isFullWidth, setIsFullWidth] = useState(false);
   
@@ -543,6 +568,16 @@ const App = () => {
         <div className="w-full mt-8">
           <FullTranscriptViewer transcript={transcript} />
         </div>
+
+        {isNearBottom && (
+          <SaveContentButton
+            screenshots={screenshots}
+            videoInfo={videoInfo}
+            transcriptAnalysis={transcriptAnalysis}
+            transcript={transcript}
+            disabled={!videoId || screenshots.length === 0}
+          />
+        )}
       </div>
     </div>
   );
