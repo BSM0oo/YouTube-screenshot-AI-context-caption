@@ -1,44 +1,51 @@
 import { useState, useEffect } from 'react';
 
-const usePersistedState = (key, defaultValue) => {
-  const [state, setState] = useState(() => {
+const usePersistedState = (key, initialValue) => {
+  // State to store our value
+  // Pass initial state function to useState so logic is only executed once
+  const [storedValue, setStoredValue] = useState(() => {
     try {
       const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
+      // Parse stored json or if none return initialValue
+      return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error('Error loading from localStorage:', error);
-      return defaultValue;
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
     }
   });
 
-  useEffect(() => {
+  // Return a wrapped version of useState's setter function that 
+  // persists the new value to localStorage
+  const setValue = value => {
     try {
-      // For screenshots array, only store the last 10 items to prevent quota issues
-      let valueToStore = state;
-      if (key === 'screenshots' && Array.isArray(state)) {
-        valueToStore = state.slice(-10); // Only keep last 10 screenshots
-      }
-      
-      const serializedValue = JSON.stringify(valueToStore);
-      localStorage.setItem(key, serializedValue);
+      // Allow value to be a function so we have same API as useState
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      // Save state
+      setStoredValue(valueToStore);
+      // Save to localStorage
+      localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
-      // If quota is exceeded, try clearing old screenshots
-      if (error.name === 'QuotaExceededError') {
-        try {
-          localStorage.removeItem('screenshots'); // Clear screenshots storage
-          if (key !== 'screenshots') { // If not screenshots, try saving again
-            localStorage.setItem(key, JSON.stringify(state));
-          }
-        } catch (retryError) {
-          console.error('Error saving to localStorage after retry:', retryError);
-        }
-      } else {
-        console.error('Error saving to localStorage:', error);
-      }
+      console.error(`Error setting localStorage key "${key}":`, error);
     }
-  }, [key, state]);
+  };
 
-  return [state, setState];
+  // Subscribe to changes in value across tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === key && e.newValue !== null) {
+        try {
+          setStoredValue(JSON.parse(e.newValue));
+        } catch (error) {
+          console.error(`Error parsing storage change for key "${key}":`, error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key]);
+
+  return [storedValue, setValue];
 };
 
 export default usePersistedState;

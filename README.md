@@ -154,6 +154,20 @@ DONE -Improve the export options. The export to md and html aren't displaying an
 i want you to use the tools in the youtube_info_extractor.py in PythonExamples folder to improve the web app by adding a section that appends all these details about the video to the bottom of the page, below the generated trasncript outline. I also want a button to hide/show it. We may want to create or modify a component to do this. The components directory currently has NotesManager, ScreenshotGallery, ScreenshotManager, YoutubePlayer, and TranscriptViewer.
 
 ## Changelog
+
+### Updates on 1/19/25:
+- Refactored App.jsx for better organization:
+  - Split App.jsx into smaller components
+  - Created new styles directory for CSS
+  - Added layouts directory with MainLayout component
+  - Created utils directory for helper functions
+  - Added features directory with module-specific components
+  - Improved state management and code organization
+  - Added VideoSection component
+  - Created reusable hooks
+  - Improved code maintainability
+
+## Changelog
 ## take a look at the VideoControls.jsx that was created and maybe use that. I created a backup called Enhanced_VideoControl.jsx
 ### Updates on 1/19/25:
 - Added Save Content feature:
