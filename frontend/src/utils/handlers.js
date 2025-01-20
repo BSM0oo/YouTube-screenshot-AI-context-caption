@@ -26,11 +26,17 @@ export const createScreenshotHandler = (setScreenshots) => (newScreenshots) => {
 export const createPromptSubmitHandler = (setScreenshots, setError, currentTime, transcript) => async (prompt) => {
   try {
     const response = await queryTranscript(transcript, prompt);
+    
+    // Ensure we have a valid response
+    if (!response || typeof response.response !== 'string') {
+      throw new Error('Invalid response format from server');
+    }
+
     const newScreenshot = {
       timestamp: currentTime,
       type: 'prompt_response',
       prompt: prompt,
-      response: response.data.response,
+      response: response.response, // Use response directly from the response object
       createdAt: new Date().toISOString()
     };
 
@@ -38,7 +44,11 @@ export const createPromptSubmitHandler = (setScreenshots, setError, currentTime,
     return true;
   } catch (error) {
     console.error('Error submitting prompt:', error);
-    setError('Failed to process prompt: ' + (error.response?.data?.detail || error.message));
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Unknown error occurred';
+    setError('Failed to process prompt: ' + errorMessage);
     return false;
   }
 };
@@ -47,11 +57,25 @@ export const createAnalysisHandler = (setTranscriptAnalysis, setError, setIsAnal
   try {
     setIsAnalyzing(true);
     const response = await queryTranscript(analysis, 'Generate a detailed outline');
-    const analysisText = response.response || response.data?.response || response.data?.analysis || '';
+    
+    // Handle different possible response formats
+    const analysisText = typeof response === 'string' ? response :
+                        response.response || 
+                        response.analysis || 
+                        '';
+                        
+    if (!analysisText) {
+      throw new Error('No analysis text received from server');
+    }
+
     setTranscriptAnalysis(analysisText);
   } catch (error) {
     console.error('Error analyzing transcript:', error);
-    setError('Failed to analyze transcript: ' + (error.response?.data?.detail || error.message));
+    const errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Unknown error occurred';
+    setError('Failed to analyze transcript: ' + errorMessage);
   } finally {
     setIsAnalyzing(false);
   }

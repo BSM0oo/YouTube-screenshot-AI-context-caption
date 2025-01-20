@@ -23,6 +23,9 @@ export const clearServerState = async (eraseFiles) => {
 export const fetchTranscript = async (videoId) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/api/transcript/${videoId}`);
+    if (!response.data || !Array.isArray(response.data.transcript)) {
+      throw new Error('Invalid transcript format received from server');
+    }
     return response.data.transcript;
   } catch (error) {
     console.error('Error fetching transcript:', error);
@@ -38,11 +41,40 @@ export const fetchTranscript = async (videoId) => {
 export const fetchVideoInfo = async (videoId) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/api/video-info/${videoId}`);
+    if (!response.data) {
+      throw new Error('No video information received from server');
+    }
     return response.data;
   } catch (error) {
     console.error('Error fetching video info:', error);
     throw error;
   }
+};
+
+/**
+ * Process transcript query response
+ * @param {Object} response - Raw response from server
+ * @returns {Object} - Processed response
+ */
+const processQueryResponse = (response) => {
+  if (!response.data) {
+    throw new Error('Empty response from server');
+  }
+
+  // Handle different response formats
+  if (typeof response.data === 'string') {
+    return { response: response.data };
+  }
+
+  if (typeof response.data.response === 'string') {
+    return { response: response.data.response };
+  }
+
+  if (typeof response.data === 'object' && response.data.content) {
+    return { response: response.data.content };
+  }
+
+  throw new Error('Invalid response format from server');
 };
 
 /**
@@ -57,7 +89,7 @@ export const analyzeTranscript = async (transcript, prompt) => {
       transcript,
       prompt
     });
-    return response.data;
+    return processQueryResponse(response);
   } catch (error) {
     console.error('Error analyzing transcript:', error);
     throw error;
@@ -76,7 +108,7 @@ export const queryTranscript = async (transcript, prompt) => {
       transcript,
       prompt
     });
-    return response.data;
+    return processQueryResponse(response);
   } catch (error) {
     console.error('Error querying transcript:', error);
     throw error;
