@@ -8,7 +8,9 @@ const EnhancedScreenshotGallery = ({
   screenshots,
   onScreenshotsUpdate,
   customPrompt,
-  videoTitle
+  videoTitle,
+  isMainContentVisible,
+  setIsMainContentVisible
 }) => {
   const [processingScreenshot, setProcessingScreenshot] = useState(false);
   const [error, setError] = useState('');
@@ -114,6 +116,8 @@ const EnhancedScreenshotGallery = ({
         onEditCaptions={() => setEditMode(!editMode)}
         onReorderScreenshots={() => setReorderMode(!reorderMode)}
         reorderMode={reorderMode}
+        isMainContentVisible={isMainContentVisible}
+        setIsMainContentVisible={setIsMainContentVisible}
       />
 
       <DraggableGalleryGrid

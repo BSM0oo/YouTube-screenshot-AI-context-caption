@@ -317,6 +317,8 @@ const App = () => {
           customPrompt={customPrompt}
           videoTitle={videoInfo?.title}
           transcript={transcript}
+          isMainContentVisible={isMainContentVisible}
+          setIsMainContentVisible={setIsMainContentVisible}
         />
       </div>
 

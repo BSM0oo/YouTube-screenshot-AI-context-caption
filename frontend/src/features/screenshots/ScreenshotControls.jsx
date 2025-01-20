@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, ArrowUpDown, Grid, Edit, Move } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown, Grid, Edit, Move, Eye } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,9 @@ const ScreenshotControls = ({
   setGroupByType,
   onEditCaptions,
   onReorderScreenshots,
-  reorderMode
+  reorderMode,
+  isMainContentVisible,
+  setIsMainContentVisible
 }) => {
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -33,6 +35,15 @@ const ScreenshotControls = ({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
           <DropdownMenuLabel>Display Options</DropdownMenuLabel>
+          <DropdownMenuCheckboxItem
+            checked={!isMainContentVisible}
+            onCheckedChange={(checked) => setIsMainContentVisible(!checked)}
+            className="gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            Hide Video & Transcript
+          </DropdownMenuCheckboxItem>
+
           <DropdownMenuSeparator />
           
           <DropdownMenuCheckboxItem
