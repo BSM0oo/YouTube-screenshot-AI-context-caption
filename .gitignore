@@ -1,6 +1,10 @@
 # Environment variables
 .env
 
+.DS_Store
+frontend/.DS_Store
+**/.DS_Store
+
 #other files and folders
 PythonExamples/
 claude-generated-files
