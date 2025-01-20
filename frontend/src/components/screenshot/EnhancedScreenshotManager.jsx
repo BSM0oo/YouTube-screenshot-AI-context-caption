@@ -39,6 +39,7 @@ const EnhancedScreenshotManager = ({
     
     try {
       setProcessingScreenshot(true);
+      setIsCapturing(true);
       const screenshot = await captureScreenshot({
         player,
         videoId,
@@ -53,13 +54,15 @@ const EnhancedScreenshotManager = ({
           color: textColor
         } : null
       });
-      const newScreenshots = [screenshot];
-      setScreenshots(prev => [...prev, ...newScreenshots]);
-      onScreenshotsTaken(newScreenshots);
+      // Send new screenshot to parent component immediately
+      onScreenshotsTaken([screenshot]);
+      // Update local state to show immediately in gallery
+      setScreenshots(prev => [...prev, screenshot]);
     } catch (error) {
       setError('Failed to capture screenshot: ' + error.message);
     } finally {
       setProcessingScreenshot(false);
+      setIsCapturing(false);
     }
   };
 
@@ -124,11 +127,12 @@ const EnhancedScreenshotManager = ({
     if (!player || markedTimestamps.length === 0) return;
     
     try {
+      setIsCapturing(true);
       setProcessingScreenshot(true);
       setError('');
       player.pauseVideo();
       
-      const screenshots = [];
+      const allScreenshots = [];
       let captionErrors = false;
       setRemainingMarks(markedTimestamps.length);
 
@@ -155,10 +159,8 @@ const EnhancedScreenshotManager = ({
             } : null
           });
 
-          // Update UI immediately with this screenshot
-          screenshots.push(screenshot);
-          setScreenshots(prev => [...prev, screenshot]);
-          onScreenshotsTaken([screenshot]);
+          // Add to array of all screenshots
+          allScreenshots.push(screenshot);
           setRemainingMarks(prev => prev - 1);
 
           if (screenshot.captionError) {
@@ -175,9 +177,11 @@ const EnhancedScreenshotManager = ({
         }
       }
       
-      // Clear marks only after all processing is done
-      if (screenshots.length > 0) {
+      // Clear marks and update screenshots all at once
+      if (allScreenshots.length > 0) {
         setMarkedTimestamps([]); // Clear marks after all captures
+        setScreenshots(prev => [...prev, ...allScreenshots]); // Update local state
+        onScreenshotsTaken(allScreenshots); // Update parent state
 
         if (captionErrors) {
           setError('Some captions failed to generate. You can regenerate them individually.');
@@ -216,8 +220,15 @@ const EnhancedScreenshotManager = ({
 
   const handleModeChange = (mode) => {
     setScreenshotMode(mode);
+    // Reset all capture-related states
+    setIsCapturing(false);
+    setProcessingScreenshot(false);
+    setError('');
+    
+    // Clear marks if switching from mark mode
     if (mode === 'mark') {
       setMarkedTimestamps([]);
+      setRemainingMarks(0);
     }
   };
 
@@ -263,9 +274,10 @@ const EnhancedScreenshotManager = ({
               <CaptureControls 
                 mode={screenshotMode}
                 onCapture={screenshotMode === 'single' ? handleSingleScreenshot : handleBurstScreenshots}
-                disabled={!player || isCapturing}
+                disabled={!player || isCapturing || screenshotMode === 'mark' || screenshotMode === 'gif'}
                 processing={processingScreenshot}
                 burstCount={burstCount}
+                screenshotMode={screenshotMode}
               />
             )}
           />

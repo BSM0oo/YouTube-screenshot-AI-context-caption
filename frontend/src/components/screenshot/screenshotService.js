@@ -47,15 +47,15 @@ export const captureScreenshot = async ({
       throw error;
     }
 
-    // If captions are disabled, return just the screenshot
+    // If captions are disabled, return just the screenshot with appropriate metadata
     if (!generateCaption) {
       return {
         image: screenshotResponse.data.image_data,
         timestamp,
-        caption: '',
         content_type: 'screenshot_only',
         notes: '',
-        transcriptContext: ''
+        transcriptContext: '',
+        captionDisabled: true  // Add flag to indicate captions were intentionally disabled
       };
     }
 

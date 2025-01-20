@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import usePersistedState from './hooks/usePersistedState';
+import useNearBottom from './hooks/useNearBottom';
 import MainLayout from './layouts/MainLayout';
 import VideoSection from './features/video/VideoSection';
 import EnhancedScreenshotManager from './components/screenshot/EnhancedScreenshotManager';
@@ -11,28 +12,9 @@ import FullTranscriptViewer from './components/FullTranscriptViewer';
 import ReactMarkdown from 'react-markdown';
 import TranscriptPrompt from './components/TranscriptPrompt';
 import SaveContentButton from './components/SaveContentButton';
-import { clearServerState, queryTranscript } from './utils/apiUtils';
+import { createScreenshotHandler, createPromptSubmitHandler, createAnalysisHandler, createClearDataHandler } from './utils/handlers';
 import ScreenshotsHeader from './features/screenshots/ScreenshotsHeader';
 
-// Hook to detect if user has scrolled near bottom
-const useNearBottom = () => {
-  const [isNearBottom, setIsNearBottom] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.scrollY;
-      const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
-      setIsNearBottom(distanceFromBottom < 1000);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return isNearBottom;
-};
 
 const App = () => {
   const isNearBottom = useNearBottom();
@@ -75,91 +57,21 @@ const App = () => {
     localStorage.setItem('eraseFilesOnClear', eraseFiles);
   }, [eraseFiles]);
 
-  const handleScreenshotsTaken = (newScreenshots) => {
-    setScreenshots(prev => {
-      const updated = [...prev, ...newScreenshots].map(screenshot => ({
-        ...screenshot,
-        timestamp: Number(screenshot.timestamp),
-        image: screenshot.image,
-        caption: screenshot.caption || '',
-        notes: screenshot.notes || '',
-        transcriptContext: screenshot.transcriptContext || '',
-        content_type: screenshot.content_type || 'other'
-      }));
-      
-      if (updated.length > 50) {
-        console.warn('More than 50 screenshots, keeping only the most recent ones');
-        return updated.slice(-50);
-      }
-      return updated;
-    });
-  };
-
-  const handlePromptSubmit = async (prompt) => {
-    try {
-      const response = await queryTranscript(transcript, prompt);
-      const newScreenshot = {
-        timestamp: currentTime,
-        type: 'prompt_response',
-        prompt: prompt,
-        response: response.data.response,
-        createdAt: new Date().toISOString()
-      };
-
-      setScreenshots(prev => [...prev, newScreenshot]);
-      return true;
-    } catch (error) {
-      console.error('Error submitting prompt:', error);
-      setError('Failed to process prompt: ' + (error.response?.data?.detail || error.message));
-      return false;
-    }
-  };
-
-  const handleAnalysisGenerated = async (analysis) => {
-    try {
-      setIsAnalyzing(true);
-      const response = await queryTranscript(analysis, 'Generate a detailed outline');
-      // Check the response structure and handle accordingly
-      const analysisText = response.response || response.data?.response || response.data?.analysis || '';
-      setTranscriptAnalysis(analysisText);
-    } catch (error) {
-      console.error('Error analyzing transcript:', error);
-      setError('Failed to analyze transcript: ' + (error.response?.data?.detail || error.message));
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const clearStoredData = async () => {
-    if (confirm('Are you sure you want to clear all data?' + 
-        (eraseFiles ? '\nThis will also erase local files.' : ''))) {
-      await clearServerState(eraseFiles);
-      
-      const keys = [
-        'yt-notes-videoId',
-        'yt-notes-screenshots',
-        'yt-notes-notes',
-        'yt-notes-transcript',
-        'yt-notes-transcriptAnalysis',
-        'yt-notes-customPrompt',
-        'yt-notes-videoInfo',
-        'yt-notes-detectedScenes',
-        'yt-notes-contentTypes'
-      ];
-      
-      keys.forEach(key => localStorage.removeItem(key));
-      
-      setVideoId('');
-      setScreenshots([]);
-      setNotes('');
-      setTranscript([]);
-      setTranscriptAnalysis('');
-      setCustomPrompt('Based on the following transcript context...');
-      setVideoInfo(null);
-      setDetectedScenes([]);
-      setContentTypes(new Set());
-    }
-  };
+  const handleScreenshotsTaken = createScreenshotHandler(setScreenshots);
+  const handlePromptSubmit = createPromptSubmitHandler(setScreenshots, setError, currentTime, transcript);
+  const handleAnalysisGenerated = createAnalysisHandler(setTranscriptAnalysis, setError, setIsAnalyzing);
+  const clearStoredData = createClearDataHandler(
+    setVideoId,
+    setScreenshots,
+    setNotes,
+    setTranscript,
+    setTranscriptAnalysis,
+    setCustomPrompt,
+    setVideoInfo,
+    setDetectedScenes,
+    setContentTypes,
+    eraseFiles
+  );
 
   return (
     <MainLayout isFullWidth={isFullWidth} videoInfo={videoInfo} error={error}>

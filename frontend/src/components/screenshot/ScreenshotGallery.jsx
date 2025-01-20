@@ -65,12 +65,17 @@ const ScreenshotGallery = ({ initialScreenshots = [], onScreenshotEdit }) => {
               </div>
             </div>
             <div className="p-4">
-              {screenshot.caption && (
+              {!screenshot.captionDisabled && screenshot.caption && screenshot.caption.trim() && (
                 <div className="prose max-w-none">
-                  {screenshot.caption.split('\n').map((line, i) => (
-                    <p key={i} className="mb-2">{line}</p>
-                  ))}
+                  {screenshot.caption.split('\n')
+                    .filter(line => line.trim())
+                    .map((line, i) => (
+                      <p key={i} className="mb-2">{line}</p>
+                    ))}
                 </div>
+              )}
+              {!screenshot.captionDisabled && screenshot.captionError && (
+                <div className="text-red-500">❌ Caption generation failed - use regenerate option</div>
               )}
               {screenshot.notes && (
                 <div className="mt-2 text-sm text-gray-600">{screenshot.notes}</div>

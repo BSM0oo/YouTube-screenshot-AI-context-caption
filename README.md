@@ -1,12 +1,41 @@
 # YouTube Notes App
 
-A web application for taking structured notes while watching YouTube videos. Features include screenshot capture, AI-powered captions, comprehensive transcript analysis, and polished export options for creating study materials and documentation.
-
+A web application for taking structured notes while watching YouTube videos. Features include:
+- Screenshot capture with AI-generated captions
+- Single screenshot, burst mode, and mark mode capture options
+- GIF capture with customizable duration
+- Image labeling with customizable text and font size
+- Comprehensive transcript analysis
+- Export to multiple formats (MD, HTML, PDF)
 
 
 
 ## Project Structure
 
+youtube-notes-app/
+├── frontend/                # React frontend application
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── features/      # Feature-specific components
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── layouts/       # Layout components
+│   │   ├── styles/        # CSS and styling
+│   │   ├── utils/         # Utility functions
+│   │   └── App.jsx        # Main application component
+├── modules/               # Backend modules
+│   ├── models/            # Pydantic models
+│   ├── routes/            # API routes by feature
+│   │   ├── content_routes.py    # Content saving
+│   │   ├── gif_routes.py        # GIF capture
+│   │   ├── screenshot_routes.py # Screenshots
+│   │   ├── state_routes.py      # App state
+│   │   ├── transcript_routes.py # Transcripts
+│   │   └── video_info_routes.py # Video info
+│   ├── config.py         # Configuration
+│   └── gif_capture.py    # GIF functionality
+└── main.py               # FastAPI application
+
+## Frontend detailed structure:
 youtube-notes-app/
 ├── frontend/                # React frontend application
 │   ├── src/
@@ -38,11 +67,80 @@ youtube-notes-app/
 │   │   ├── App.jsx         # Main application component
 │   │   ├── config.js       # Configuration settings
 │   │   └── main.jsx        # Application entry point
-├── modules/                # Backend modules
-│   └── gif_capture.py      # GIF capture functionality
-├── main.py                 # Python backend server
-└── README.md              # Documentation
 
+### Backend structure:
+/modules/
+  /models/
+    __init__.py         - All Pydantic models (VideoRequest, CaptionRequest, etc.)
+  /routes/
+    __init__.py         - Router management and imports
+    content_routes.py   - Save content endpoints
+    gif_routes.py       - GIF capture functionality
+    screenshot_routes.py - Screenshot and caption endpoints
+    state_routes.py     - App state management
+    transcript_routes.py - Transcript and analysis endpoints
+    video_info_routes.py - YouTube video info endpoints
+  /config.py            - Central configuration and service initialization
+
+### Key Functionality Locations:
+Screenshot Capture: screenshot_routes.py + screenshot_manager
+Captions: screenshot_routes.py (generate-caption endpoint)
+State Management: state_routes.py
+File Saving: content_routes.py
+Video Info: video_info_routes.py
+GIF Creation: gif_routes.py
+
+### Recent Structural Changes
+The backend has been reorganized for better maintainability:
+
+1. **Modular Route Structure**
+   - Routes are split by feature (screenshots, transcripts, etc.)
+   - Each route file is focused on specific functionality
+   - Improved error handling and logging per route
+
+2. **Centralized Models**
+   - All Pydantic models moved to models/__init__.py
+   - Shared between different route modules
+   - Better type validation and consistency
+
+3. **Configuration Management**
+   - Central config.py for all settings
+   - Service initialization (Claude, YouTube API)
+   - Directory structure setup
+   - Constants and environment variables
+
+4. **Enhanced Frontend Organization**
+   - Custom hooks for reusable logic
+   - Feature-based component structure
+   - Improved state management
+   - Better separation of concerns
+
+5. **API Integration**
+   - Frontend API calls centralized in utils/apiUtils.js
+   - Consistent error handling
+   - Better type safety with backend models
+   - Improved response processing
+
+
+### Error troubleshooting related to backend prompt:
+I'm getting [ERROR_MESSAGE] when trying to [ACTION]. 
+This may related to a recent backend reorganization where we:
+- Split main.py into modules (models, routes, config)
+- Routes are in /modules/routes/
+- Models are in /modules/models/__init__.py
+- Configuration is in /modules/config.py
+
+Relevant files that might be involved:
+- Frontend: /frontend/src/components/[COMPONENT].jsx
+- API calls: /frontend/src/utils/apiUtils.js
+- Backend routes: /modules/routes/[FEATURE]_routes.py
+- Backend models: /modules/models/__init__.py
+
+Can you:
+1. Check if the API route exists in the correct route file
+2. Verify the model is defined in models/__init__.py
+3. Confirm the frontend is using the correct endpoint
+4. Look for any import/dependency issues
 
 
 
@@ -154,6 +252,97 @@ DONE -Improve the export options. The export to md and html aren't displaying an
 i want you to use the tools in the youtube_info_extractor.py in PythonExamples folder to improve the web app by adding a section that appends all these details about the video to the bottom of the page, below the generated trasncript outline. I also want a button to hide/show it. We may want to create or modify a component to do this. The components directory currently has NotesManager, ScreenshotGallery, ScreenshotManager, YoutubePlayer, and TranscriptViewer.
 
 ## Changelog
+
+### Updates on 1/20/25:
+- Added GIF mode to screenshot button disabling:
+  - Button is now disabled in GIF mode
+  - Added "Use GIF Controls" text when in GIF mode
+  - Consistent behavior with mark mode disabling
+
+### Previous Updates on 1/20/25:
+- Fixed Take Screenshot button behavior in different modes:
+  - Button is now properly disabled in mark mode
+  - Fixed incorrect burst mode text showing in other modes
+  - Added "Use Mark Controls" text when in mark mode
+  - Improved button state management across modes
+  - Added better visual feedback for disabled state
+
+### Previous Updates on 1/20/25:
+- Fixed button state issue when switching modes:
+  - Added proper state reset when changing modes
+  - Reset all capture-related states on mode switch
+  - Improved mode change handling
+  - Fixed Take Screenshot button remaining disabled
+  - Added error state cleanup
+
+### Previous Updates on 1/20/25:
+- Fixed multiple screenshot-related issues:
+  - Fixed Take Screenshot button incorrectly being disabled
+  - Fixed mark mode not preserving screenshots without captions
+  - Improved screenshot state management in mark mode
+  - Added proper state cleanup after capturing
+  - Fixed issue with screenshots being overwritten
+
+### Previous Updates on 1/20/25:
+- Fixed caption error message showing incorrectly in mark mode:
+  - Added captionDisabled flag to properly track when captions are intentionally disabled
+  - Updated ScreenshotGallery to not show caption UI for caption-disabled screenshots
+  - Fixed error message showing up when captions were intentionally disabled
+  - Improved caption error handling and display logic
+
+### Previous Updates on 1/20/25:
+- Fixed screenshot ordering and display issues:
+  - Added timestamp-based sorting for consistent screenshot order
+  - Improved screenshot state management in single capture mode
+  - Fixed issue with screenshots not displaying properly in gallery
+  - Ensured consistent behavior between mark mode and single captures
+  - Added proper screenshot timestamp sorting in handlers
+
+### Previous Updates on 1/20/25:
+- Fixed issue with screenshots not displaying in mark mode when taken without captions:
+  - Modified ScreenshotGallery to only show caption section when content exists
+  - Removed empty caption property from screenshot data when captions are disabled
+  - Improved caption rendering to filter out empty lines
+  - Added proper content type handling for caption-less screenshots
+
+### Updates on 1/20/25:
+- Major backend refactoring:
+  - Split main.py into smaller, focused modules
+  - Created new module structure for better organization
+  - Moved models to dedicated module
+  - Created config module for centralized configuration
+  - Split routes into separate modules:
+    - content_routes.py for saving content
+    - gif_routes.py for GIF capture
+    - screenshot_routes.py for screenshots and captions
+    - state_routes.py for app state management
+    - transcript_routes.py for transcript operations
+    - video_info_routes.py for YouTube info
+  - Improved error handling and logging
+  - Better separation of concerns
+
+- Created new custom hook useNearBottom.js:
+  - Moved scroll detection logic from App.jsx to dedicated hook
+  - Improved code organization and reusability
+  - Better separation of concerns
+  - Cleaner App.jsx file structure
+
+- Created new handlers.js utility file:
+  - Moved all event handlers from App.jsx to dedicated file
+  - Implemented factory functions for handler creation
+  - Improved dependency injection through parameters
+  - Better state management in handlers
+  - Reduced App.jsx complexity
+
+- Added save content functionality:
+  - New /api/save-content endpoint in backend
+  - Dedicated directory for saved content
+  - Enhanced error handling
+  - Better user feedback with file paths
+  - Fixed HTML content generation
+
+
+
 
 ### Updates on 1/19/25:
 - Refactored App.jsx for better organization:
@@ -396,20 +585,37 @@ Updated requirements.txt with all necessary dependencies
 
 
 
-### Core Functionality
-- YouTube video playback with timestamp-based navigation
-- Screenshot capture with AI-generated captions
-- Real-time transcript display and navigation
-- Global notes management
-- Video information display
+## Core Features
+
+### Screenshot Modes
+- **Single Screenshot**: Take individual screenshots with optional captions
+- **Burst Mode**: Capture multiple screenshots at specified intervals
+- **Mark Mode**: Mark points in video for later batch capture
+- **GIF Mode**: Create animated GIFs with custom duration
+
+### Caption and Labeling
+- AI-powered captions using Claude API
+- Custom image labels with adjustable text size
+- Optional caption generation per screenshot
+- Support for caption regeneration
+
+### Video Controls
+- Full-width toggle for video player
+- Timestamp-based navigation
+- Adaptive controls for each screenshot mode
+- Real-time transcript display
+
+### Organization
+- Screenshot gallery with pagination
+- Chronological timestamp sorting
+- Content type categorization
+- Screenshot state persistence
 
 ### Export Options
-- Markdown export with formatted content
-- HTML export with styled layout
-- Professional PDF export via print dialog
-- Properly formatted transcripts
-- Screenshot organization with captions
-- Comprehensive transcript analysis
+- Markdown export with formatting
+- HTML export with styling
+- PDF export via system print
+- Full transcript export
 
 ## Component Architecture
 
@@ -501,37 +707,30 @@ For local network access:
 
 ## Component Architecture
 
-The application is built using a modular component architecture:
+### Core Components
+- **App.jsx**: Global state management and component coordination
+- **VideoSection.jsx**: Video player and core video controls
+- **NotesManager.jsx**: Notes management and export functionality
+- **TranscriptViewer.jsx**: Transcript display and navigation
 
-1. **App.jsx** (Parent Component)
-   - Manages global state (video ID, screenshots, notes, transcript)
-   - Handles localStorage persistence
-   - Coordinates communication between components
+### Screenshot Components
+- **EnhancedScreenshotManager.jsx**: Main screenshot management
+- **ScreenshotGallery.jsx**: Gallery display and organization
+- **ScreenshotModeSelector.jsx**: Mode selection interface
+- **CaptureControls.jsx**: Mode-specific control buttons
+- **LabelControls.jsx**: Image label customization
+- **GifCaptureManager.jsx**: GIF capture and customization
 
-2. **YouTubePlayer**
-   - Embeds and controls YouTube video playback
-   - Provides player controls API to other components
-   - Manages YouTube IFrame API integration
+### Helper Components
+- **SaveContentButton.jsx**: Content export functionality
+- **VideoInfoViewer.jsx**: Video metadata display
+- **FullTranscriptViewer.jsx**: Complete transcript view
 
-3. **ScreenshotManager**
-   - Handles single and burst screenshot capture
-   - Manages screenshot capture settings
-   - Communicates with backend for image processing
-
-4. **TranscriptViewer**
-   - Displays and manages video transcript
-   - Provides timestamp-based navigation
-   - Handles transcript analysis generation
-
-5. **NotesManager**
-   - Manages global notes
-   - Handles note export (Markdown, HTML, PDF)
-   - Manages print functionality
-
-6. **ScreenshotGallery**
-   - Displays captured screenshots
-   - Manages screenshot captions and notes
-   - Handles caption regeneration
+### Configuration and Utils
+- **config.js**: API endpoints and global settings
+- **apiUtils.js**: API interaction helpers
+- **handlers.js**: Event handler factories
+- **useNearBottom.js**: Scroll detection hook
 
 ## State Management
 
