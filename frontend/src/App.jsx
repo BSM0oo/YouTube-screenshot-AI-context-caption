@@ -67,6 +67,9 @@ const App = () => {
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(true);
   const [isMainContentVisible, setIsMainContentVisible] = useState(true);
   const [outlinePosition, setOutlinePosition] = usePersistedState('yt-notes-outlinePosition', 'after');
+  const [sortOldestFirst, setSortOldestFirst] = usePersistedState('yt-notes-sortOldestFirst', false);
+  const [groupByType, setGroupByType] = usePersistedState('yt-notes-groupByType', false);
+  
 
   useEffect(() => {
     localStorage.setItem('eraseFilesOnClear', eraseFiles);
@@ -259,6 +262,18 @@ const App = () => {
           setIsMainContentVisible={setIsMainContentVisible}
           outlinePosition={outlinePosition}
           setOutlinePosition={setOutlinePosition}
+          sortOldestFirst={sortOldestFirst}
+          setSortOldestFirst={setSortOldestFirst}
+          groupByType={groupByType}
+          setGroupByType={setGroupByType}
+          onEditCaptions={() => {
+            // Implementation for editing captions
+            console.log('Edit captions');
+          }}
+          onReorderScreenshots={() => {
+            // Implementation for reordering screenshots
+            console.log('Reorder screenshots');
+          }}
         />
         {outlinePosition === 'before' && transcriptAnalysis && (
           <div className="bg-white rounded-lg p-6 border mb-8 w-full">
