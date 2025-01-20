@@ -11,30 +11,87 @@ from playwright.async_api import async_playwright
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from transcript_retriever import EnhancedTranscriptRetriever
+from modules.gif_capture import GifCapture
 import yt_dlp
 import re
 from urllib.parse import urlparse
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import pytesseract
 import io
+from PIL import ImageDraw, ImageFont
 import traceback
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 from pathlib import Path
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 
 # Load environment variables
 load_dotenv()
 
+def cleanup_old_screenshots():
+    """Clean up old screenshots based on age and count limits"""
+    try:
+        # Get current time
+        now = datetime.now()
+        cleanup_threshold = now - timedelta(days=MAX_SCREENSHOT_AGE_DAYS)
+        
+        # Group files by video ID
+        video_files = {}
+        for file_path in SCREENSHOTS_DIR.glob("yt_*"):
+            if not file_path.is_file():
+                continue
+                
+            # Parse video ID from filename
+            match = re.match(r"yt_([^_]+)_", file_path.name)
+            if not match:
+                continue
+                
+            video_id = match.group(1)
+            file_stat = file_path.stat()
+            file_time = datetime.fromtimestamp(file_stat.st_mtime)
+            
+            # Check if file is too old
+            if file_time < cleanup_threshold:
+                file_path.unlink()
+                continue
+                
+            if video_id not in video_files:
+                video_files[video_id] = []
+            video_files[video_id].append((file_path, file_time))
+        
+        # Clean up excess files per video
+        for video_id, files in video_files.items():
+            if len(files) > MAX_SCREENSHOTS_PER_VIDEO:
+                # Sort by modification time, newest first
+                sorted_files = sorted(files, key=lambda x: x[1], reverse=True)
+                
+                # Remove oldest files exceeding the limit
+                for file_path, _ in sorted_files[MAX_SCREENSHOTS_PER_VIDEO:]:
+                    file_path.unlink()
+                    
+        return {"message": "Cleanup completed successfully"}
+    except Exception as e:
+        logger.error(f"Error during screenshot cleanup: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Initialize Anthropic client
 anthropic = Anthropic(
     api_key=os.getenv('ANTHROPIC_API_KEY')
 )
+
+# Initialize GIF capture
+gif_capture = GifCapture()
+
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
 app = FastAPI()
 
@@ -63,9 +120,20 @@ class VideoInfo:
     chapters: List[Dict[str, str]]
     links: List[str]
 
+# Constants for screenshot management
+MAX_SCREENSHOT_AGE_DAYS = 7  # Maximum age of screenshots before cleanup
+MAX_SCREENSHOTS_PER_VIDEO = 50  # Maximum number of screenshots to keep per video
+
+class LabelConfig(BaseModel):
+    text: str
+    fontSize: int
+    color: str = 'white' # Default to white text
+
 class VideoRequest(BaseModel):
     video_id: str
-    timestamp: float
+    timestamp: float 
+    generate_caption: bool = True
+    label: Optional[LabelConfig] = None
 
 class CaptionRequest(BaseModel):
     timestamp: float
@@ -77,6 +145,13 @@ class VideoFrameAnalysisRequest(BaseModel):
     video_id: str
     start_time: float
     duration: float = 30.0  # Default to 30 seconds
+
+class GifCaptureRequest(BaseModel):
+    video_id: str
+    start_time: float
+    duration: float = 3.0  # Default to 3 seconds
+    fps: Optional[int] = 10
+    width: Optional[int] = 480
 
 class QuestionRequest(BaseModel):
     transcript: str
@@ -163,32 +238,55 @@ def extract_links_from_description(description: str) -> List[str]:
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     return re.findall(url_pattern, description)
 
-def get_video_info(url: str) -> Optional[VideoInfo]:
-    """Extract information from a YouTube video including chapters, description, and links."""
-    if not is_valid_youtube_url(url):
-        raise ValueError("Invalid YouTube URL provided")
-
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': True,
-    }
-
+def get_video_info(video_id: str) -> Optional[VideoInfo]:
+    """Extract information from a YouTube video using the YouTube Data API."""
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            chapters = info.get('chapters', [])
-            description = info.get('description', '')
-            links = extract_links_from_description(description)
-            
-            return VideoInfo(
-                title=info.get('title', ''),
-                description=description,
-                chapters=chapters,
-                links=links
-            )
+        # Get video details
+        video_response = youtube.videos().list(
+            part='snippet,contentDetails',
+            id=video_id
+        ).execute()
+
+        if not video_response['items']:
+            return None
+
+        video_data = video_response['items'][0]
+        description = video_data['snippet']['description']
+        title = video_data['snippet']['title']
+        
+        # Extract chapters from description (YouTube stores chapters in description)
+        chapters = []
+        lines = description.split('\n')
+        for line in lines:
+            # Look for timestamp patterns like "0:00" or "00:00" or "0:00:00"
+            match = re.search(r'^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\s*[-–]\s*(.+)$', line.strip())
+            if match:
+                groups = match.groups()
+                if len(groups) == 4:
+                    hours = int(groups[0]) if groups[0] else 0
+                    minutes = int(groups[1])
+                    seconds = int(groups[2])
+                    title = groups[3].strip()
+                    time_seconds = hours * 3600 + minutes * 60 + seconds
+                    chapters.append({
+                        'start_time': time_seconds,
+                        'title': title
+                    })
+
+        links = extract_links_from_description(description)
+        
+        return VideoInfo(
+            title=title,
+            description=description,
+            chapters=chapters,
+            links=links
+        )
+
+    except HttpError as e:
+        print(f"An HTTP error occurred: {e}")
+        return None
     except Exception as e:
-        print(f"Error extracting video information: {str(e)}")
+        print(f"An error occurred: {e}")
         return None
 
 @app.get("/api/transcript/{video_id}")
@@ -215,114 +313,25 @@ async def get_transcript(video_id: str):
             error_msg = "No transcript/captions available for this video"
         raise HTTPException(status_code=404, detail=error_msg)
 
-@app.post("/api/analyze-video-frames")
-async def analyze_video_frames(request: VideoFrameAnalysisRequest):
-    """Analyze video frames at 5-second intervals"""
-    try:
-        print(f"Starting analysis for video {request.video_id} from time {request.start_time}")
-        
-        async with async_playwright() as p:
-            print("Launching browser...")
-            browser = await p.chromium.launch()
-            page = await browser.new_page()
-            
-            frames = []
-            frame_data = []
-            
-            print("Navigating to video...")
-            await page.goto(f"https://www.youtube.com/embed/{request.video_id}?start={int(request.start_time)}")
-            await page.wait_for_load_state('networkidle')
-            
-            print("Waiting for video element...")
-            await page.wait_for_selector('video')
-            
-            detector = SceneDetector()
-            current_time = request.start_time
-            end_time = request.start_time + request.duration
-            interval = 5  # 5-second intervals
-            total_frames = int((end_time - current_time) / interval) + 1
-            frames_processed = 0
-            
-            print(f"Beginning frame analysis: will analyze {total_frames} frames at {interval}-second intervals")
-            
-            while current_time < end_time:
-                frames_processed += 1
-                print(f"\nProcessing frame {frames_processed}/{total_frames} at timestamp {current_time:.1f}s")
-                
-                # Seek to current time
-                await page.evaluate(f"document.querySelector('video').currentTime = {current_time}")
-                await asyncio.sleep(1.0)  # Slightly longer wait for frame to load properly
-                
-                print(f"Capturing frame...")
-                screenshot = await page.screenshot(type='png')
-                frame = cv2.imdecode(
-                    np.frombuffer(screenshot, np.uint8),
-                    cv2.IMREAD_COLOR
-                )
-                frames.append(frame)
-                
-                # Analyze frame
-                scene_change = bool(len(frames) > 1 and detector.detect_scene_change(frames[-2], frame))
-                has_text = bool(detector.detect_text_presence(frame))
-                is_slide = bool(detector.is_slide_frame(frame))
-                
-                # Log any detections
-                detections = []
-                if scene_change:
-                    detections.append("Scene change")
-                if has_text:
-                    detections.append("Text")
-                if is_slide:
-                    detections.append("Slide")
-                
-                if detections:
-                    print(f"Detected: {', '.join(detections)}")
-                
-                frame_info = {
-                    "timestamp": float(current_time),
-                    "scene_change": scene_change,
-                    "contains_text": has_text,
-                    "is_slide": is_slide
-                }
-                frame_data.append(frame_info)
-                
-                # Move to next interval
-                current_time += interval
-                
-                # Calculate and log progress percentage
-                progress = (frames_processed / total_frames) * 100
-                print(f"Analysis progress: {progress:.1f}%")
-            
-            print("\nFrame analysis complete!")
-            results_summary = {
-                "total_frames_analyzed": len(frame_data),
-                "scene_changes": sum(1 for f in frame_data if f['scene_change']),
-                "frames_with_text": sum(1 for f in frame_data if f['contains_text']),
-                "slides": sum(1 for f in frame_data if f['is_slide'])
-            }
-            print("\nResults summary:")
-            for key, value in results_summary.items():
-                print(f"{key.replace('_', ' ').title()}: {value}")
-            
-            await browser.close()
-            print("\nBrowser closed. Returning results.")
-            
-            response_data = {
-                "frame_analysis": frame_data,
-                "summary": results_summary
-            }
-            return response_data
-            
-    except Exception as e:
-        print(f"Error during frame analysis: {str(e)}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Frame analysis failed: {str(e)}")
+@app.post("/api/cleanup-screenshots")
+async def trigger_cleanup():
+    """Manually trigger screenshot cleanup"""
+    return cleanup_old_screenshots()
 
 @app.post("/api/capture-screenshot")
 async def capture_screenshot(request: VideoRequest):
     """Capture a screenshot from a YouTube video using Playwright"""
     max_retries = 3
     current_try = 0
+    
+    # Run cleanup before capturing new screenshot
+    try:
+        cleanup_old_screenshots()
+    except Exception as e:
+        logger.warning(f"Cleanup failed but continuing with capture: {str(e)}")
+    
+    # Extract whether to generate captions
+    generate_caption = getattr(request, 'generate_caption', True)
     
     while current_try < max_retries:
         try:
@@ -333,7 +342,15 @@ async def capture_screenshot(request: VideoRequest):
                 browser = await p.chromium.launch()
                 page = await browser.new_page()
                 
-                await page.goto(f"https://www.youtube.com/embed/{request.video_id}?start={int(request.timestamp)}&autoplay=1")
+                # Set a user agent to appear more like a regular browser
+                await page.set_extra_http_headers({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                })
+
+                # Try embedding with modest branding and origin parameters
+                embed_url = f"https://www.youtube.com/embed/{request.video_id}?start={int(request.timestamp)}&autoplay=1&modestbranding=1&origin=http://localhost"
+                await page.goto(embed_url)
+                
                 await page.wait_for_load_state('networkidle')
                 
                 # Wait for and handle video element
@@ -361,18 +378,72 @@ async def capture_screenshot(request: VideoRequest):
                     clip={'x': 0, 'y': 0, 'width': 1280, 'height': 720}
                 )
                 
+                # Add label if requested
+                if request.label:
+                    # Open image with Pillow
+                    image = Image.open(io.BytesIO(screenshot_bytes))
+                    draw = ImageDraw.Draw(image)
+                    
+                    # Load a font with the requested size
+                    try:
+                        font = ImageFont.truetype('/System/Library/Fonts/Helvetica.ttc', request.label.fontSize)
+                    except:
+                        # Fallback to default font if Helvetica not found
+                        font = ImageFont.load_default()
+                        font_size = request.label.fontSize
+                    
+                    # Calculate text size and position
+                    text = request.label.text
+                    bbox = draw.textbbox((0, 0), text, font=font)
+                    text_width = bbox[2] - bbox[0]
+                    text_height = bbox[3] - bbox[1]
+                    
+                    # Center text in upper portion of image
+                    x = (image.width - text_width) // 2
+                    y = image.height // 4 - text_height // 2
+                    
+                    # Draw white text with black outline for visibility
+                    outline_width = max(1, request.label.fontSize // 25)
+                    for adj in range(-outline_width, outline_width + 1):
+                        for offy in range(-outline_width, outline_width + 1):
+                            if adj == 0 and offy == 0:
+                                continue
+                            # Always use black outline
+                            draw.text((x + adj, y + offy), text, font=font, fill='black')
+                    # Use the configured text color
+                    draw.text((x, y), text, font=font, fill=request.label.color)
+                    
+                    # Convert back to bytes
+                    buffer = io.BytesIO()
+                    image.save(buffer, format='PNG')
+                    screenshot_bytes = buffer.getvalue()
+                
+                # Optimize the image
+                image = Image.open(io.BytesIO(screenshot_bytes))
+                
+                # Convert to WebP format with optimized settings
+                webp_buffer = io.BytesIO()
+                image.save(webp_buffer, 'WEBP', quality=80, method=6)
+                optimized_bytes = webp_buffer.getvalue()
+                
                 # Save to data directory
                 timestamp_str = f"{int(request.timestamp)}"
-                file_path = SCREENSHOTS_DIR / f"yt_{request.video_id}_{timestamp_str}.png"
+                file_path = SCREENSHOTS_DIR / f"yt_{request.video_id}_{timestamp_str}.webp"
                 
                 with open(file_path, "wb") as f:
-                    f.write(screenshot_bytes)
+                    f.write(optimized_bytes)
                 
                 # Convert to base64 for response
-                base64_screenshot = base64.b64encode(screenshot_bytes).decode()
+                base64_screenshot = base64.b64encode(optimized_bytes).decode()
                 
                 print("Screenshot captured and saved successfully")
-                return {"image_data": f"data:image/png;base64,{base64_screenshot}"}
+                if not generate_caption:
+                    return {"image_data": f"data:image/webp;base64,{base64_screenshot}"}
+                    
+                return {
+                    "image_data": f"data:image/webp;base64,{base64_screenshot}",
+                    "generate_caption": True
+                }
                 
         except Exception as e:
             print(f"Screenshot attempt {current_try} failed: {str(e)}")
@@ -410,6 +481,36 @@ async def load_state():
 
         return {"state": state}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/capture-gif")
+async def capture_gif(request: GifCaptureRequest):
+    """Capture a GIF from a YouTube video"""
+    try:
+        gif_data = await gif_capture.capture_gif(
+            video_id=request.video_id,
+            start_time=request.start_time,
+            duration=request.duration,
+            fps=request.fps,
+            width=request.width
+        )
+        
+        # Save GIF to disk
+        timestamp_str = f"{int(request.start_time)}"
+        file_path = SCREENSHOTS_DIR / f"yt_{request.video_id}_{timestamp_str}.gif"
+        
+        with open(file_path, "wb") as f:
+            f.write(gif_data)
+        
+        # Convert to base64 for response
+        base64_gif = base64.b64encode(gif_data).decode()
+        
+        return {
+            "gif_data": f"data:image/gif;base64,{base64_gif}"
+        }
+        
+    except Exception as e:
+        print(f"GIF capture error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/state/clear")
@@ -664,10 +765,9 @@ Response:"""
 
 @app.get("/api/video-info/{video_id}")
 async def get_video_information(video_id: str):
-    """Get detailed information about a YouTube video"""
+    """Get detailed information about a YouTube video using the YouTube API"""
     try:
-        video_url = f"https://www.youtube.com/watch?v={video_id}"
-        video_info = get_video_info(video_url)
+        video_info = get_video_info(video_id)
         
         if video_info:
             return {
@@ -809,4 +909,3 @@ if __name__ == "__main__":
         port=8000,       # Port number
         reload=True
     )
-

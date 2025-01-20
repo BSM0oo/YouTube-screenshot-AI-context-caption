@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const YouTubePlayer = ({ videoId, onPlayerReady }) => {
   const playerRef = useRef(null);
+  const containerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -17,12 +18,34 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
       initPlayer();
     }
 
+    // Add keyboard event listener
+    const handleKeyDown = (e) => {
+      if (!playerRef.current || !isReady) return;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          const currentTime = playerRef.current.getCurrentTime();
+          playerRef.current.seekTo(Math.max(0, currentTime - 10), true);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          const currentTime2 = playerRef.current.getCurrentTime();
+          const duration = playerRef.current.getDuration();
+          playerRef.current.seekTo(Math.min(duration, currentTime2 + 10), true);
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      document.removeEventListener('keydown', handleKeyDown);
       if (playerRef.current) {
         playerRef.current.destroy();
       }
     };
-  }, [videoId]);
+  }, [videoId, isReady]);
 
   const initPlayer = () => {
     if (!videoId) return;
@@ -47,19 +70,34 @@ const YouTubePlayer = ({ videoId, onPlayerReady }) => {
     });
   };
 
+  const prepareForScreenshot = () => {
+    if (!containerRef.current) return;
+    
+    const relatedVideos = containerRef.current.querySelector('[aria-label="Related videos"]');
+    if (relatedVideos) {
+      relatedVideos.style.display = 'none';
+    }
+    
+    return () => {
+      if (relatedVideos) {
+        relatedVideos.style.display = '';
+      }
+    };
+  };
+
   return (
     <div 
+      ref={containerRef}
       id="youtube-player-container" 
       className="relative w-full overflow-hidden touch-manipulation" 
       style={{ 
         paddingBottom: '56.25%',
-        WebkitOverflowScrolling: 'touch' // Enable smooth scrolling on iOS
+        WebkitOverflowScrolling: 'touch'
       }}
     >
       <div 
         id="youtube-player" 
-        className="absolute inset-0 w-full h-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        className="absolute inset-0 w-full h-full youtube-player"
       />
     </div>
   );

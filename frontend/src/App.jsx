@@ -1,85 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import YouTubePlayer from './components/YouTubePlayer';
-import EnhancedScreenshotManager from './components/EnhancedScreenshotManager';
+import usePersistedState from './hooks/usePersistedState';
+import MainLayout from './layouts/MainLayout';
+import VideoSection from './features/video/VideoSection';
+import EnhancedScreenshotManager from './components/screenshot/EnhancedScreenshotManager';
 import EnhancedScreenshotGallery from './components/EnhancedScreenshotGallery_New';
 import TranscriptViewer from './components/TranscriptViewer';
 import NotesManager from './components/NotesManager';
 import VideoInfoViewer from './components/VideoInfoViewer';
 import FullTranscriptViewer from './components/FullTranscriptViewer';
-import usePersistedState from './hooks/usePersistedState';
-import { API_BASE_URL } from './config';
 import ReactMarkdown from 'react-markdown';
 import TranscriptPrompt from './components/TranscriptPrompt';
+import SaveContentButton from './components/SaveContentButton';
+import { clearServerState, queryTranscript } from './utils/apiUtils';
+import ScreenshotsHeader from './features/screenshots/ScreenshotsHeader';
 
-const printStyles = `
-  @media print {
-    .main-content {
-      display: none !important;
-    }
-    
-    .print-content {
-      display: block !important;
-    }
+// Hook to detect if user has scrolled near bottom
+const useNearBottom = () => {
+  const [isNearBottom, setIsNearBottom] = useState(false);
 
-    .print-content .whitespace-pre-wrap {
-      max-height: none !important;
-      overflow: visible !important;
-    }
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY;
+      const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+      setIsNearBottom(distanceFromBottom < 1000);
+    };
 
-    .page-break {
-      break-before: page !important;
-    }
-  }
-`;
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-const appStyles = `
-  .app-container {
-    width: 100vw;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  .content-container {
-    width: 100%;
-    max-width: 100vw;
-    padding: 1rem;
-    margin: 0;
-    box-sizing: border-box;
-  }
-
-  @media (min-width: 640px) {
-    .content-container {
-      max-width: 80rem;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-  }
-
-  .video-container {
-    width: 100%;
-    position: relative;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio */
-  }
-
-  .video-container > div {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-`;
-
-const clearServerState = async (eraseFiles) => {
-  try {
-    await axios.delete(`${API_BASE_URL}/api/state/clear?eraseFiles=${eraseFiles}`);
-  } catch (error) {
-    console.error('Error clearing state:', error);
-  }
+  return isNearBottom;
 };
 
 const App = () => {
+  const isNearBottom = useNearBottom();
+  const [isFullWidth, setIsFullWidth] = useState(false);
+  
   // Enhanced state management with persistence
   const [videoId, setVideoId] = usePersistedState('yt-notes-videoId', '');
   const [screenshots, setScreenshots] = usePersistedState('yt-notes-screenshots', []);
@@ -96,10 +54,10 @@ const App = () => {
   const [contentTypes, setContentTypes] = usePersistedState('yt-notes-contentTypes', new Set());
 
   // UI state (no persistence needed)
-  const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentTime, setCurrentTime] = useState(0);
+  const [player, setPlayer] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [eraseFiles, setEraseFiles] = useState(() => 
@@ -108,37 +66,14 @@ const App = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(true);
   const [isMainContentVisible, setIsMainContentVisible] = useState(true);
-
-  // Add styles to head
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = printStyles + appStyles;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
+  const [outlinePosition, setOutlinePosition] = usePersistedState('yt-notes-outlinePosition', 'after');
+  const [sortOldestFirst, setSortOldestFirst] = usePersistedState('yt-notes-sortOldestFirst', false);
+  const [groupByType, setGroupByType] = usePersistedState('yt-notes-groupByType', false);
+  
 
   useEffect(() => {
     localStorage.setItem('eraseFilesOnClear', eraseFiles);
   }, [eraseFiles]);
-
-  useEffect(() => {
-    if (player) {
-      const interval = setInterval(() => {
-        try {
-          const time = player.getCurrentTime();
-          setCurrentTime(time);
-        } catch (error) {
-          console.error('Error getting current time:', error);
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [player]);
-
-  const extractVideoId = (url) => {
-    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    return match ? match[1] : url;
-  };
 
   const handleScreenshotsTaken = (newScreenshots) => {
     setScreenshots(prev => {
@@ -152,7 +87,6 @@ const App = () => {
         content_type: screenshot.content_type || 'other'
       }));
       
-      // Keep only the last 50 screenshots to prevent localStorage size issues
       if (updated.length > 50) {
         console.warn('More than 50 screenshots, keeping only the most recent ones');
         return updated.slice(-50);
@@ -161,48 +95,9 @@ const App = () => {
     });
   };
 
-  const handleVideoSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setVideoInfo(null);
-    setDetectedScenes([]);
-    setContentTypes(new Set());
-    
-    try {
-      const id = extractVideoId(videoId);
-      if (id) {
-        if (player) {
-          player.loadVideoById(id);
-        }
-
-        const [transcriptResponse, videoInfoResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/transcript/${id}`),
-          axios.get(`${API_BASE_URL}/api/video-info/${id}`)
-        ]);
-
-        setTranscript(transcriptResponse.data.transcript);
-        setVideoInfo(videoInfoResponse.data);
-      }
-    } catch (error) {
-      setError('Error loading video: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePlayerReady = (ytPlayer) => {
-    setPlayer(ytPlayer);
-  };
-
   const handlePromptSubmit = async (prompt) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/query-transcript`, {
-        transcript: transcript,
-        prompt: prompt
-      });
-
-      // Add the response to screenshots array with a special type
+      const response = await queryTranscript(transcript, prompt);
       const newScreenshot = {
         timestamp: currentTime,
         type: 'prompt_response',
@@ -223,10 +118,10 @@ const App = () => {
   const handleAnalysisGenerated = async (analysis) => {
     try {
       setIsAnalyzing(true);
-      const response = await axios.post(`${API_BASE_URL}/api/analyze-transcript`, {
-        transcript: analysis
-      });
-      setTranscriptAnalysis(response.data.analysis);
+      const response = await queryTranscript(analysis, 'Generate a detailed outline');
+      // Check the response structure and handle accordingly
+      const analysisText = response.response || response.data?.response || response.data?.analysis || '';
+      setTranscriptAnalysis(analysisText);
     } catch (error) {
       console.error('Error analyzing transcript:', error);
       setError('Failed to analyze transcript: ' + (error.response?.data?.detail || error.message));
@@ -240,7 +135,6 @@ const App = () => {
         (eraseFiles ? '\nThis will also erase local files.' : ''))) {
       await clearServerState(eraseFiles);
       
-      // Clear all persisted state
       const keys = [
         'yt-notes-videoId',
         'yt-notes-screenshots',
@@ -255,7 +149,6 @@ const App = () => {
       
       keys.forEach(key => localStorage.removeItem(key));
       
-      // Reset state
       setVideoId('');
       setScreenshots([]);
       setNotes('');
@@ -269,247 +162,121 @@ const App = () => {
   };
 
   return (
-    <div className="app-container bg-gray-50">
-      <div className="content-container">
-        {/* Collapsible main content */}
-        {isMainContentVisible && (
-          <>
-            <div className="flex flex-col w-full mb-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start w-full">
-                <div className="flex flex-col w-full sm:w-auto">
-                  <h1 className="text-2xl sm:text-3xl font-bold">YouTube Notes App</h1>
-                  {videoInfo?.title && (
-                    <div className="mt-3 bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg w-full sm:w-auto">
-                      <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
-                        {videoInfo.title}
-                      </h2>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={eraseFiles}
-                      onChange={(e) => setEraseFiles(e.target.checked)}
-                      className="form-checkbox h-4 w-4 text-blue-600"
-                    />
-                    <span className="text-sm text-gray-600">Erase local files on clear</span>
-                  </label>
-                  <button
-                    onClick={clearStoredData}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                  >
-                    Clear All Data
-                  </button>
-                </div>
+    <MainLayout isFullWidth={isFullWidth} videoInfo={videoInfo} error={error}>
+      {isMainContentVisible && (
+        <>
+          <VideoSection 
+            videoId={videoId}
+            setVideoId={setVideoId}
+            setTranscript={setTranscript}
+            setVideoInfo={setVideoInfo}
+            isFullWidth={isFullWidth}
+            setIsFullWidth={setIsFullWidth}
+            onClearData={clearStoredData}
+            eraseFiles={eraseFiles}
+            setEraseFiles={setEraseFiles}
+            setError={setError}
+            setPlayer={setPlayer}
+            player={player}
+            currentTime={currentTime}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4 w-full">
+            <div className="space-y-4 flex flex-col">
+              <div>
+                <EnhancedScreenshotManager
+                  videoId={videoId}
+                  player={player}
+                  transcript={transcript}
+                  onScreenshotsTaken={handleScreenshotsTaken}
+                  customPrompt={customPrompt}
+                  detectedScenes={detectedScenes}
+                  onScenesDetected={setDetectedScenes}
+                />
               </div>
             </div>
 
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleVideoSubmit} className="mb-4 w-full">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={videoId}
-                    onChange={(e) => setVideoId(e.target.value)}
-                    placeholder="Enter YouTube Video URL"
-                    className="p-2 border rounded text-sm sm:text-base w-full"
-                  />
-                </div>
-                <button 
-                  type="submit" 
-                  className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-                  disabled={loading}
-                >
-                  {loading ? 'Loading...' : 'Load Video'}
-                </button>
-              </div>
-            </form>
-
-            {/* Main content grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
-              {/* Left Column */}
-              <div className="space-y-4 flex flex-col">
-                {/* Video Container */}
-                <div className="video-container">
-                  {videoId ? (
-                    <YouTubePlayer 
-                      videoId={videoId}
-                      onPlayerReady={handlePlayerReady}
-                    />
-                  ) : (
-                    <div className="absolute top-0 left-0 w-full h-full bg-black flex items-center justify-center">
-                      <div className="text-red-600 flex flex-col items-center">
-                        <svg 
-                          className="w-16 h-16 mb-2" 
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                        </svg>
-                        <span className="text-white text-lg font-medium">Enter YouTube URL</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Screenshot Controls */}
-                <div>
-                  <EnhancedScreenshotManager
-                    videoId={videoId}
-                    player={player}
-                    transcript={transcript}
-                    onScreenshotsTaken={handleScreenshotsTaken}
-                    customPrompt={customPrompt}
-                    detectedScenes={detectedScenes}
-                    onScenesDetected={setDetectedScenes}
-                  />
-                </div>
-              </div>
-
-              {/* Right Column - Transcript */}
-              <div className="h-full space-y-4">
-                {/* Transcript Controls */}
-                <div className="bg-white rounded-lg p-4 border">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-xl font-bold">Transcript Controls</h2>
-                      {transcript.length > 0 && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleAnalysisGenerated(transcript)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                            disabled={isAnalyzing}
-                          >
-                            {isAnalyzing ? 'Generating...' : 'Generate Outline'}
-                          </button>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const fullTranscript = transcript
-                                  .map(item => `[${new Date(item.start * 1000).toISOString().substr(11, 8)}] ${item.text}`)
-                                  .join('\n');
-                                
-                                if (navigator.clipboard && window.isSecureContext) {
-                                  await navigator.clipboard.writeText(fullTranscript);
-                                } else {
-                                  const textArea = document.createElement("textarea");
-                                  textArea.value = fullTranscript;
-                                  textArea.style.position = "fixed";
-                                  textArea.style.left = "-999999px";
-                                  document.body.appendChild(textArea);
-                                  textArea.focus();
-                                  textArea.select();
-                                  try {
-                                    document.execCommand('copy');
-                                  } catch (err) {
-                                    console.error('Fallback: Oops, unable to copy', err);
-                                    alert('Copy failed! Please try selecting and copying the text manually.');
-                                    return;
-                                  }
-                                  document.body.removeChild(textArea);
-                                }
-                                alert('Transcript copied to clipboard!');
-                              } catch (err) {
-                                console.error('Failed to copy:', err);
-                                alert('Failed to copy transcript. Please try again or copy manually.');
-                              }
-                            }}
-                            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Copy
-                          </button>
-                          <button
-                            onClick={() => setIsTranscriptVisible(!isTranscriptVisible)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            {isTranscriptVisible ? 'Hide Transcript' : 'Show Transcript'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+            <div className="h-full space-y-4">
+              <div className="bg-white rounded-lg p-4 border">
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-bold">Transcript Controls</h2>
                     {transcript.length > 0 && (
-                      <TranscriptPrompt onSubmit={handlePromptSubmit} />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAnalysisGenerated(transcript)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                          disabled={isAnalyzing}
+                        >
+                          {isAnalyzing ? 'Generating...' : 'Generate Outline'}
+                        </button>
+                        <button
+                          onClick={() => setIsTranscriptVisible(!isTranscriptVisible)}
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                          {isTranscriptVisible ? 'Hide Transcript' : 'Show Transcript'}
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
-
-                {/* Main Transcript Viewer */}
-                {isTranscriptVisible && (
-                  <TranscriptViewer
-                    transcript={transcript}
-                    currentTime={currentTime}
-                    onTimeClick={(time) => player?.seekTo(time, true)}
-                    onAnalysisGenerated={handleAnalysisGenerated}
-                    className="bg-white rounded-lg h-[600px] overflow-auto"
-                  />
-                )}
-
-                {/* Notes Manager - Moved here */}
-                <div className="mt-4">
-                  <NotesManager
-                    title="Notes & Export Options"
-                    showButtonText={isNotesVisible => 
-                      isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
-                    }
-                    videoId={videoId}
-                    videoTitle={videoInfo?.title}
-                    videoDescription={videoInfo?.description}
-                    notes={notes}
-                    onNotesChange={setNotes}
-                    screenshots={screenshots}
-                    transcriptAnalysis={transcriptAnalysis}
-                    transcript={transcript}
-                  />
+                  {transcript.length > 0 && (
+                    <TranscriptPrompt onSubmit={handlePromptSubmit} />
+                  )}
                 </div>
               </div>
-            </div>
-          </>
-        )}
 
-        {/* Screenshots & Notes section with collapse button */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
-            <button
-              onClick={() => setIsMainContentVisible(!isMainContentVisible)}
-              className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-            >
-              {isMainContentVisible ? (
-                <>
-                  <span>Hide Video & Transcript</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
-                </>
-              ) : (
-                <>
-                  <span>Show Video & Transcript</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </>
+              {isTranscriptVisible && (
+                <TranscriptViewer
+                  transcript={transcript}
+                  currentTime={currentTime}
+                  onTimeClick={(time) => player?.seekTo(time)}
+                  onAnalysisGenerated={handleAnalysisGenerated}
+                  className="bg-white rounded-lg h-[600px] overflow-auto"
+                />
               )}
-            </button>
-          </div>
-          <EnhancedScreenshotGallery
-            screenshots={screenshots}
-            onScreenshotsUpdate={setScreenshots}
-            customPrompt={customPrompt}
-            videoTitle={videoInfo?.title}
-            transcript={transcript}
-          />
-        </div>
 
-        {transcriptAnalysis && (
-          <div className="bg-white rounded-lg p-6 border mt-8 w-full">
+              <div className="mt-4">
+                <NotesManager
+                  title="Notes & Export Options"
+                  showButtonText={isNotesVisible => 
+                    isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
+                  }
+                  videoId={videoId}
+                  videoTitle={videoInfo?.title}
+                  videoDescription={videoInfo?.description}
+                  notes={notes}
+                  onNotesChange={setNotes}
+                  screenshots={screenshots}
+                  transcriptAnalysis={transcriptAnalysis}
+                  transcript={transcript}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="mt-8">
+        <ScreenshotsHeader
+          isMainContentVisible={isMainContentVisible}
+          setIsMainContentVisible={setIsMainContentVisible}
+          outlinePosition={outlinePosition}
+          setOutlinePosition={setOutlinePosition}
+          sortOldestFirst={sortOldestFirst}
+          setSortOldestFirst={setSortOldestFirst}
+          groupByType={groupByType}
+          setGroupByType={setGroupByType}
+          onEditCaptions={() => {
+            // Implementation for editing captions
+            console.log('Edit captions');
+          }}
+          onReorderScreenshots={() => {
+            // Implementation for reordering screenshots
+            console.log('Reorder screenshots');
+          }}
+        />
+        {outlinePosition === 'before' && transcriptAnalysis && (
+          <div className="bg-white rounded-lg p-6 border mb-8 w-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Generated Transcript Outline</h2>
               <button
@@ -544,16 +311,72 @@ const App = () => {
             </div>
           </div>
         )}
-
-        <div className="w-full mt-8">
-          <VideoInfoViewer videoInfo={videoInfo} />
-        </div>
-        
-        <div className="w-full mt-8">
-          <FullTranscriptViewer transcript={transcript} />
-        </div>
+        <EnhancedScreenshotGallery
+          screenshots={screenshots}
+          onScreenshotsUpdate={setScreenshots}
+          customPrompt={customPrompt}
+          videoTitle={videoInfo?.title}
+          transcript={transcript}
+          isMainContentVisible={isMainContentVisible}
+          setIsMainContentVisible={setIsMainContentVisible}
+        />
       </div>
-    </div>
+
+      {outlinePosition === 'after' && transcriptAnalysis && (
+        <div className="bg-white rounded-lg p-6 border mt-8 w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Generated Transcript Outline</h2>
+            <button
+              onClick={() => setTranscriptAnalysis('')}
+              className="text-red-500 hover:text-red-700"
+            >
+              Clear Outline
+            </button>
+          </div>
+          <div className="prose prose-lg max-w-none">
+            <ReactMarkdown
+              components={{
+                ul: ({node, ...props}) => (
+                  <ul className="list-disc pl-4 space-y-1 mb-4" {...props} />
+                ),
+                li: ({node, ...props}) => (
+                  <li className="ml-4" {...props} />
+                ),
+                h2: ({node, ...props}) => (
+                  <h2 className="text-lg font-bold mt-4 mb-2" {...props} />
+                ),
+                p: ({node, ...props}) => (
+                  <p className="mb-4" {...props} />
+                ),
+                strong: ({node, ...props}) => (
+                  <strong className="font-bold" {...props} />
+                )
+              }}
+            >
+              {transcriptAnalysis}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full mt-8">
+        <VideoInfoViewer videoInfo={videoInfo} />
+      </div>
+      
+      <div className="w-full mt-8">
+        <FullTranscriptViewer transcript={transcript} />
+      </div>
+
+      {isNearBottom && (
+        <SaveContentButton
+          screenshots={screenshots}
+          videoInfo={videoInfo}
+          transcriptAnalysis={transcriptAnalysis}
+          transcript={transcript}
+          disabled={!videoId || screenshots.length === 0}
+        />
+      )}
+    </MainLayout>
   );
 };
 

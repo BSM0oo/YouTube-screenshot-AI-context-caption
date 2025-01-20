@@ -12,16 +12,36 @@ const ScreenshotGallery = ({
   const [processingScreenshot, setProcessingScreenshot] = useState(false);
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
+const [editableCaptions, setEditableCaptions] = useState({});
 
   const formatTime = (seconds) => {
     const date = new Date(seconds * 1000);
     return date.toISOString().substr(11, 8);
   };
 
-  const toggleNotes = (index) => {
-    setVisibleNotes(prev => ({
+  // Initialize editable captions when entering edit mode
+  const handleEditMode = () => {
+    if (!editMode) {
+      const initialCaptions = {};
+      screenshots.forEach((screenshot, index) => {
+        initialCaptions[index] = screenshot.caption || '';
+      });
+      setEditableCaptions(initialCaptions);
+    } else {
+      // Save all changes when exiting edit mode
+      const updatedScreenshots = screenshots.map((screenshot, index) => ({
+        ...screenshot,
+        caption: editableCaptions[index] || screenshot.caption
+      }));
+      onScreenshotsUpdate(updatedScreenshots);
+    }
+    setEditMode(!editMode);
+  };
+
+  const handleCaptionChange = (index, newValue) => {
+    setEditableCaptions(prev => ({
       ...prev,
-      [index]: !prev[index]
+      [index]: newValue
     }));
   };
 
@@ -78,7 +98,7 @@ const ScreenshotGallery = ({
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
         <button
-          onClick={() => setEditMode(!editMode)}
+          onClick={handleEditMode}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
           {editMode ? 'Save Changes' : 'Edit Captions'}
@@ -102,15 +122,8 @@ const ScreenshotGallery = ({
             <div className="p-6 space-y-4">
               {editMode ? (
                 <textarea
-                  value={screenshot.caption || ''}
-                  onChange={(e) => {
-                    const updatedScreenshots = [...screenshots];
-                    updatedScreenshots[index] = {
-                      ...screenshot,
-                      caption: e.target.value
-                    };
-                    onScreenshotsUpdate(updatedScreenshots);
-                  }}
+                  value={editableCaptions[index] || ''}
+                  onChange={(e) => handleCaptionChange(index, e.target.value)}
                   className="w-full min-h-[200px] p-3 border rounded-md resize-y text-sm font-sans"
                   placeholder="Caption text..."
                 />

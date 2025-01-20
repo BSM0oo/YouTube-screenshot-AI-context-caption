@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import GalleryControls from './GalleryControls';
-import GalleryGrid from './GalleryGrid';
+import DraggableGalleryGrid from './DraggableGalleryGrid';
+import ScreenshotControls from '../features/screenshots/ScreenshotControls';
 
 const EnhancedScreenshotGallery = ({
   screenshots,
   onScreenshotsUpdate,
   customPrompt,
-  videoTitle
+  videoTitle,
+  isMainContentVisible,
+  setIsMainContentVisible
 }) => {
   const [processingScreenshot, setProcessingScreenshot] = useState(false);
   const [error, setError] = useState('');
@@ -16,6 +18,7 @@ const EnhancedScreenshotGallery = ({
   const [groupByType, setGroupByType] = useState(false);
   const [expandedScreenshot, setExpandedScreenshot] = useState(null);
   const [sortAscending, setSortAscending] = useState(true);
+  const [reorderMode, setReorderMode] = useState(false);
 
   const regenerateCaption = async (index) => {
     try {
@@ -101,20 +104,26 @@ const EnhancedScreenshotGallery = ({
   const groupedScreenshots = groupByType ? groupScreenshotsByType() : null;
 
   return (
-    <div className="space-y-8">
-      <GalleryControls
-        videoTitle={videoTitle}
-        sortAscending={sortAscending}
+    <div className="space-y-8 print:space-y-4 print:mx-0 print:w-full print:max-w-full">
+      <div className="print:fixed print:top-0 print:right-4 print:text-sm print:text-gray-500">
+        {new Date().toLocaleDateString()}
+      </div>
+      <ScreenshotControls
+        sortOldestFirst={!sortAscending}
+        setSortOldestFirst={(value) => setSortAscending(!value)}
         groupByType={groupByType}
-        editMode={editMode}
-        onSortToggle={() => setSortAscending(!sortAscending)}
-        onGroupToggle={() => setGroupByType(!groupByType)}
-        onEditToggle={() => setEditMode(!editMode)}
+        setGroupByType={setGroupByType}
+        onEditCaptions={() => setEditMode(!editMode)}
+        onReorderScreenshots={() => setReorderMode(!reorderMode)}
+        reorderMode={reorderMode}
+        isMainContentVisible={isMainContentVisible}
+        setIsMainContentVisible={setIsMainContentVisible}
       />
 
-      <GalleryGrid
+      <DraggableGalleryGrid
         screenshots={sortScreenshots(screenshots)}
         groupByType={groupByType}
+        reorderMode={reorderMode}
         groupedScreenshots={groupedScreenshots}
         editMode={editMode}
         expandedScreenshot={expandedScreenshot}
@@ -124,6 +133,7 @@ const EnhancedScreenshotGallery = ({
         onDeleteScreenshot={deleteScreenshot}
         onUpdatePromptResponse={updatePromptResponse}
         setExpandedScreenshot={setExpandedScreenshot}
+        onReorderScreenshots={onScreenshotsUpdate}
       />
 
       {error && (

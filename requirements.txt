@@ -13,8 +13,8 @@ python-multipart>=0.0.6
 aiofiles>=0.8.0
 yt-dlp>=2023.0.0
 tesseract
-opencv-python
 pytesseract
-Pillow
 playwright
+google-api-python-client
+moviepy>=1.0.3
 #brew install tesseract
