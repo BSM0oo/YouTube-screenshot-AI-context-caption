@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import YouTubePlayer from './components/YouTubePlayer';
+import YouTubePlayer from '../components/YouTubePlayer';
 import EnhancedScreenshotManager from './components/EnhancedScreenshotManager';
 import EnhancedScreenshotGallery from './components/EnhancedScreenshotGallery';
-import TranscriptViewer from './components/TranscriptViewer';
-import NotesManager from './components/NotesManager';
-import VideoInfoViewer from './components/VideoInfoViewer';
-import FullTranscriptViewer from './components/FullTranscriptViewer';
-import usePersistedState from './hooks/usePersistedState';
-import { API_BASE_URL } from './config';
+import TranscriptViewer from '../components/TranscriptViewer';
+import NotesManager from '../components/NotesManager';
+import VideoInfoViewer from '../components/VideoInfoViewer';
+import FullTranscriptViewer from '../components/FullTranscriptViewer';
+import usePersistedState from '../hooks/usePersistedState';
+import { API_BASE_URL } from '../config';
 import ReactMarkdown from 'react-markdown';
 
 const printStyles = `

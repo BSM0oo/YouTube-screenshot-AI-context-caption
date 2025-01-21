@@ -51,12 +51,13 @@ youtube-notes-app/
 │   ├── src/
 │   │   ├── components/     # React components
 │   │   │   ├── YouTubePlayer.jsx            # Video player component
-│   │   │   ├── EnhancedScreenshotManager.jsx # Screenshot capture handling
+│   │   │   ├── VideoControls.jsx            # Video control interface
 │   │   │   ├── TranscriptViewer.jsx         # Transcript display and navigation
 │   │   │   ├── NotesManager.jsx             # Notes and export management
 │   │   │   ├── GifCaptureManager.jsx        # GIF capture functionality
+│   │   │   ├── SaveContentButton.jsx        # Content export functionality
+│   │   │   ├── PrintLayout.jsx              # Print layout optimization
 │   │   │   ├── DraggableGalleryGrid.jsx     # Draggable grid layout
-│   │   │   ├── EnhancedScreenshotGallery.jsx # Screenshot organization
 │   │   │   ├── GalleryControls.jsx          # Gallery control buttons
 │   │   │   ├── GalleryGrid.jsx              # Grid layout component
 │   │   │   ├── PromptResponseCard.jsx       # AI response display
@@ -64,16 +65,34 @@ youtube-notes-app/
 │   │   │   ├── TranscriptPrompt.jsx         # Transcript interaction
 │   │   │   ├── VideoInfoViewer.jsx          # Video metadata display
 │   │   │   └── FullTranscriptViewer.jsx     # Full transcript display
+│   │   ├── components/screenshot/  # Screenshot functionality
+│   │   │   ├── EnhancedScreenshotManager.jsx # Main screenshot management
+│   │   │   ├── ScreenshotGallery.jsx        # Gallery display
+│   │   │   ├── ScreenshotModeSelector.jsx   # Mode selection interface
+│   │   │   ├── CaptureControls.jsx          # Mode-specific controls
+│   │   │   ├── BurstModeControls.jsx        # Burst mode interface
+│   │   │   ├── MarkModeControls.jsx         # Mark mode interface
+│   │   │   ├── LabelControls.jsx            # Image labeling interface
+│   │   │   ├── screenshotService.js         # Screenshot utilities
+│   │   │   └── useScreenshots.js            # Screenshot hooks
 │   │   ├── components/ui/  # Shadcn UI components
 │   │   │   ├── button.jsx  # Button component
 │   │   │   ├── card.jsx    # Card component
 │   │   │   ├── input.jsx   # Input component
-│   │   │   └── label.jsx   # Label component
+│   │   │   ├── label.jsx   # Label component
+│   │   │   ├── dialog.jsx  # Dialog component
+│   │   │   └── toast.jsx   # Toast notifications
 │   │   ├── styles/         # Styling
 │   │   │   ├── globals.css # Global styles and Tailwind
 │   │   │   └── ExportStyles.css # Export and print styling
 │   │   ├── utils/          # Utility functions
-│   │   │   └── exportUtils.js # Export generation utilities
+│   │   │   ├── apiUtils.js       # API interaction utilities
+│   │   │   ├── exportUtils.js    # Export generation utilities
+│   │   │   ├── handlers.js       # Event handler factories
+│   │   │   ├── iconUtils.js      # Icon management utilities
+│   │   │   ├── storageManager.js # Local storage management
+│   │   │   ├── usePersistedState.js # State persistence hook
+│   │   │   └── videoUtils.js     # Video processing utilities
 │   │   ├── App.jsx         # Main application component
 │   │   ├── config.js       # Configuration settings
 │   │   └── main.jsx        # Application entry point
@@ -269,7 +288,22 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 ## Changelog
 
 
-### Updates on 1/20/25:
+### Updates on 1/21/25:
+- Added video URL display:
+  - Added clickable video URL under video title
+  - Enhanced main layout header styling
+  - Fixed duplicate title display issue
+  - Files changed:
+    - /src/layouts/MainLayout.jsx
+    - /src/features/video/VideoSection.jsx
+    - /src/features/screenshots/ScreenshotsHeader.jsx
+  - Changes include:
+    - Added videoId to videoInfo object
+    - Enhanced title section styling
+    - Added clickable URL with hover effects
+    - Removed duplicate title displays
+    - Improved overall header organization
+
 - Fixed storage and API handling issues:
   - Added robust storage management system with quota monitoring and cleanup
   - Improved API response handling for transcript queries

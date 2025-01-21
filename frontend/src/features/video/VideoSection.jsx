@@ -48,7 +48,10 @@ const VideoSection = ({
         ]);
 
         setTranscript(transcriptResponse);
-        setVideoInfo(videoInfoResponse);
+        setVideoInfo({
+          ...videoInfoResponse,
+          videoId: id
+        });
       }
     } catch (error) {
       setError('Error loading video: ' + error.message);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import DraggableGalleryGrid from './DraggableGalleryGrid';
-import ScreenshotControls from '../features/screenshots/ScreenshotControls';
+import GalleryControls from './GalleryControls';
 
 const EnhancedScreenshotGallery = ({
   screenshots,
@@ -108,14 +108,16 @@ const EnhancedScreenshotGallery = ({
       <div className="print:fixed print:top-0 print:right-4 print:text-sm print:text-gray-500">
         {new Date().toLocaleDateString()}
       </div>
-      <ScreenshotControls
-        sortOldestFirst={!sortAscending}
-        setSortOldestFirst={(value) => setSortAscending(!value)}
+      <GalleryControls
+        videoTitle={videoTitle}
+        sortAscending={sortAscending}
         groupByType={groupByType}
-        setGroupByType={setGroupByType}
-        onEditCaptions={() => setEditMode(!editMode)}
-        onReorderScreenshots={() => setReorderMode(!reorderMode)}
+        editMode={editMode}
         reorderMode={reorderMode}
+        onSortToggle={() => setSortAscending(!sortAscending)}
+        onGroupToggle={() => setGroupByType(!groupByType)}
+        onEditToggle={() => setEditMode(!editMode)}
+        onReorderToggle={() => setReorderMode(!reorderMode)}
         isMainContentVisible={isMainContentVisible}
         setIsMainContentVisible={setIsMainContentVisible}
       />

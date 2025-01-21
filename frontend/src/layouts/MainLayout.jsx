@@ -28,6 +28,16 @@ const MainLayout = ({
                 <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">
                   {videoInfo.title}
                 </h2>
+                {videoInfo.videoId && (
+                  <a
+                    href={`https://www.youtube.com/watch?v=${videoInfo.videoId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-800 hover:text-blue-600 mt-1 block"
+                  >
+                    youtube.com/watch?v={videoInfo.videoId}
+                  </a>
+                )}
               </div>
             )}
           </div>

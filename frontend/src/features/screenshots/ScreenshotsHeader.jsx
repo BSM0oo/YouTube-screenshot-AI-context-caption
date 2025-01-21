@@ -2,6 +2,8 @@ import React from 'react';
 import ScreenshotsMenu from './ScreenshotsMenu';
 
 const ScreenshotsHeader = ({
+  videoId,
+  videoTitle,
   isMainContentVisible,
   setIsMainContentVisible,
   outlinePosition,
@@ -19,7 +21,21 @@ const ScreenshotsHeader = ({
 }) => {
   return (
     <div className="flex justify-between items-center mb-4">
-      <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
+      <div className="flex flex-col">
+        <div className="bg-blue-50 border-l-4 border-blue-500 pl-4 py-2 pr-3 rounded-r-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold text-blue-900 leading-tight">{videoTitle}</h2>
+          {videoId && (
+            <a
+              href={`https://www.youtube.com/watch?v=${videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-800 hover:text-blue-600 mt-1 block"
+            >
+              youtube.com/watch?v={videoId}
+            </a>
+          )}
+        </div>
+      </div>
       
       <ScreenshotsMenu 
         isMainContentVisible={isMainContentVisible}

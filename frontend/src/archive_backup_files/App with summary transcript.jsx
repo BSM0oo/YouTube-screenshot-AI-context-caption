@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import YouTubePlayer from './YouTubePlayer';
+import YouTubePlayer from '../YouTubePlayer';
 import html2canvas from 'html2canvas'; // Add this import
-import { API_BASE_URL } from './config';
+import { API_BASE_URL } from '../config';
 
 const App = () => {
   const [videoId, setVideoId] = useState('');
@@ -24,6 +24,9 @@ const App = () => {
   const [showPrompt, setShowPrompt] = useState(true);
   const [showTranscript, setShowTranscript] = useState(true);
   const transcriptRef = useRef(null);
+  const [includeScreenshot, setIncludeScreenshot] = useState(false);
+  const [transcriptAnalysis, setTranscriptAnalysis] = useState('');
+  const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
 
   // Helper function to scroll transcript
   const scrollToTime = (time) => {
@@ -105,12 +108,13 @@ const App = () => {
       const currentTime = player.getCurrentTime();
 
       try {
-        // Get screenshot from server
+        // Get screenshot from server - remove timestamp from body since it's included in URL
         const screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
           video_id: extractVideoId(videoId),
-          timestamp: currentTime
+          timestamp: currentTime,
+          include_screenshot: includeScreenshot  // Add this line
         });
-        
+
         // Increase context window from 10 to 20 seconds
         const contextWindow = 20;
 
@@ -124,17 +128,12 @@ const App = () => {
           .join('\n\n');  // Use double line breaks for paragraph breaks
 
         // Generate caption
-        const captionResponse = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
-          timestamp: currentTime,
-          image_data: screenshotResponse.data.image_data,
-          transcript_context: relevantTranscript,
-          prompt: customPrompt
-        });
+        const caption = await generateCaption(currentTime, screenshotResponse.data.image_data, relevantTranscript);
 
         setScreenshots(prev => [...prev, {
           image: screenshotResponse.data.image_data,
           timestamp: currentTime,
-          caption: captionResponse.data.caption,
+          caption,
           notes: '',
           transcriptContext: relevantTranscript
         }]);
@@ -158,17 +157,12 @@ const App = () => {
       setProcessingScreenshot(true);
       const screenshot = screenshots[screenshotIndex];
       
-      const response = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
-        timestamp: screenshot.timestamp,
-        image_data: screenshot.image,
-        transcript_context: screenshot.transcriptContext,
-        prompt: customPrompt
-      });
+      const caption = await generateCaption(screenshot.timestamp, screenshot.image, screenshot.transcriptContext);
 
       const updatedScreenshots = [...screenshots];
       updatedScreenshots[screenshotIndex] = {
         ...screenshot,
-        caption: response.data.caption
+        caption
       };
       setScreenshots(updatedScreenshots);
     } catch (error) {
@@ -176,6 +170,16 @@ const App = () => {
     } finally {
       setProcessingScreenshot(false);
     }
+  };
+
+  const generateCaption = async (timestamp, imageData, transcriptContext) => {
+    const captionResponse = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
+      timestamp,
+      image_data: includeScreenshot ? imageData : null,
+      transcript_context: transcriptContext,
+      prompt: customPrompt
+    });
+    return captionResponse.data.caption;
   };
 
   const formatTime = (seconds) => {
@@ -260,6 +264,29 @@ const App = () => {
     }
   };
 
+  const analyzeTranscript = async () => {
+    if (!transcript.length) return;
+    
+    try {
+      setAnalyzingTranscript(true);
+      setError('');
+      
+      const fullTranscript = transcript
+        .map(entry => `[${formatTime(entry.start)}] ${entry.text}`)
+        .join('\n');
+      
+      const response = await axios.post(`${API_BASE_URL}/api/analyze-transcript`, {
+        transcript: fullTranscript
+      });
+      
+      setTranscriptAnalysis(response.data.analysis);
+    } catch (error) {
+      setError('Error analyzing transcript: ' + error.message);
+    } finally {
+      setAnalyzingTranscript(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8"> {/* Adjusted padding */}
@@ -301,23 +328,38 @@ const App = () => {
               )}
             </div>
             
-            <button
-              onClick={captureScreenshot}
-              className="w-full bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
-              disabled={processingScreenshot || !player}
-            >
-              {processingScreenshot ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing Screenshot...
-                </>
-              ) : (
-                'Take Screenshot'
-              )}
-            </button>
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={captureScreenshot}
+                className="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={processingScreenshot || !player}
+              >
+                {processingScreenshot ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing Screenshot...
+                  </>
+                ) : (
+                  'Take Screenshot'
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white p-4 rounded-lg border">
+              <input
+                type="checkbox"
+                id="includeScreenshot"
+                checked={includeScreenshot}
+                onChange={(e) => setIncludeScreenshot(e.target.checked)}
+                className="form-checkbox h-4 w-4 text-blue-600"
+              />
+              <label htmlFor="includeScreenshot" className="text-sm">
+                Include screenshot in AI analysis
+              </label>
+            </div>
 
             {/* Toggle buttons and content */}
             <button
@@ -471,6 +513,39 @@ const App = () => {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="col-span-1 lg:col-span-2 space-y-4">
+          <button
+            onClick={analyzeTranscript}
+            disabled={!transcript.length || analyzingTranscript}
+            className="w-full bg-indigo-500 text-white px-4 py-3 rounded-lg hover:bg-indigo-600 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {analyzingTranscript ? (
+              <>
+                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 1 1 0 16V12H0C0 5.373 5.373 0 12 0v4z"
+                  ></path>
+                </svg>
+                Analyzing Transcript...
+              </>
+            ) : (
+              'Generate Transcript Analysis'
+            )}
+          </button>
+
+          {transcriptAnalysis && (
+            <div className="bg-white rounded-lg p-6 border">
+              <h2 className="text-xl font-bold mb-4">Transcript Analysis</h2>
+              <div className="prose max-w-none whitespace-pre-wrap">
+                {transcriptAnalysis}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

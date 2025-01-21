@@ -176,6 +176,8 @@ const App = () => {
 
       <div className="mt-8">
         <ScreenshotsHeader
+          videoId={videoId}
+          videoTitle={videoInfo?.title}
           isMainContentVisible={isMainContentVisible}
           setIsMainContentVisible={setIsMainContentVisible}
           outlinePosition={outlinePosition}

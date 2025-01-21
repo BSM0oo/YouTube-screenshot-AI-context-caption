@@ -1,4 +1,15 @@
 import React from 'react';
+import { MoreHorizontal, ArrowUpDown, Grid, Edit, Move, Eye } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const GalleryControls = ({
   videoTitle,
@@ -9,12 +20,67 @@ const GalleryControls = ({
   onSortToggle,
   onGroupToggle,
   onEditToggle,
-  onReorderToggle
+  onReorderToggle,
+  isMainContentVisible,
+  setIsMainContentVisible
 }) => {
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-4">
-        <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold">Screenshots & Notes</h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="sm" className="gap-2">
+                <MoreHorizontal className="h-4 w-4" />
+                View Options
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Display Options</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={!isMainContentVisible}
+                onCheckedChange={(checked) => setIsMainContentVisible(!checked)}
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Hide Video & Transcript
+              </DropdownMenuCheckboxItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuCheckboxItem
+                checked={sortAscending}
+                onCheckedChange={onSortToggle}
+                className="gap-2"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                Oldest First
+              </DropdownMenuCheckboxItem>
+
+              <DropdownMenuCheckboxItem
+                checked={groupByType}
+                onCheckedChange={onGroupToggle}
+                className="gap-2"
+              >
+                <Grid className="h-4 w-4" />
+                Group by Type
+              </DropdownMenuCheckboxItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem onClick={onEditToggle} className="gap-2">
+                <Edit className="h-4 w-4" />
+                {editMode ? 'Save Changes' : 'Edit Captions'}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={onReorderToggle} className="gap-2">
+                <Move className="h-4 w-4" />
+                {reorderMode ? 'Finish Reordering' : 'Reorder Screenshots'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <div className="flex gap-2 w-full sm:w-auto">
         <button
           onClick={onSortToggle}

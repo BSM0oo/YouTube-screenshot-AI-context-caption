@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import YouTubePlayer from './YouTubePlayer';
+import YouTubePlayer from '../YouTubePlayer';
 import html2canvas from 'html2canvas'; // Add this import
-import { API_BASE_URL } from './config';
+import { API_BASE_URL } from '../config';
 
 const App = () => {
   const [videoId, setVideoId] = useState('');
@@ -24,7 +24,6 @@ const App = () => {
   const [showPrompt, setShowPrompt] = useState(true);
   const [showTranscript, setShowTranscript] = useState(true);
   const transcriptRef = useRef(null);
-  const [includeScreenshot, setIncludeScreenshot] = useState(false);
   const [transcriptAnalysis, setTranscriptAnalysis] = useState('');
   const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
 
@@ -108,13 +107,12 @@ const App = () => {
       const currentTime = player.getCurrentTime();
 
       try {
-        // Get screenshot from server - remove timestamp from body since it's included in URL
+        // Get screenshot from server
         const screenshotResponse = await axios.post(`${API_BASE_URL}/api/capture-screenshot`, {
           video_id: extractVideoId(videoId),
-          timestamp: currentTime,
-          include_screenshot: includeScreenshot  // Add this line
+          timestamp: currentTime
         });
-
+        
         // Increase context window from 10 to 20 seconds
         const contextWindow = 20;
 
@@ -128,12 +126,17 @@ const App = () => {
           .join('\n\n');  // Use double line breaks for paragraph breaks
 
         // Generate caption
-        const caption = await generateCaption(currentTime, screenshotResponse.data.image_data, relevantTranscript);
+        const captionResponse = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
+          timestamp: currentTime,
+          image_data: screenshotResponse.data.image_data,
+          transcript_context: relevantTranscript,
+          prompt: customPrompt
+        });
 
         setScreenshots(prev => [...prev, {
           image: screenshotResponse.data.image_data,
           timestamp: currentTime,
-          caption,
+          caption: captionResponse.data.caption,
           notes: '',
           transcriptContext: relevantTranscript
         }]);
@@ -157,12 +160,17 @@ const App = () => {
       setProcessingScreenshot(true);
       const screenshot = screenshots[screenshotIndex];
       
-      const caption = await generateCaption(screenshot.timestamp, screenshot.image, screenshot.transcriptContext);
+      const response = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
+        timestamp: screenshot.timestamp,
+        image_data: screenshot.image,
+        transcript_context: screenshot.transcriptContext,
+        prompt: customPrompt
+      });
 
       const updatedScreenshots = [...screenshots];
       updatedScreenshots[screenshotIndex] = {
         ...screenshot,
-        caption
+        caption: response.data.caption
       };
       setScreenshots(updatedScreenshots);
     } catch (error) {
@@ -170,16 +178,6 @@ const App = () => {
     } finally {
       setProcessingScreenshot(false);
     }
-  };
-
-  const generateCaption = async (timestamp, imageData, transcriptContext) => {
-    const captionResponse = await axios.post(`${API_BASE_URL}/api/generate-caption`, {
-      timestamp,
-      image_data: includeScreenshot ? imageData : null,
-      transcript_context: transcriptContext,
-      prompt: customPrompt
-    });
-    return captionResponse.data.caption;
   };
 
   const formatTime = (seconds) => {
@@ -258,6 +256,46 @@ const App = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+      } else if (format === 'html') {
+        // Convert markdown to HTML
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Video Notes: ${videoId}</title>
+            <style>
+              body { 
+                font-family: system-ui, -apple-system, sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem;
+              }
+              img { max-width: 100%; height: auto; }
+              hr { margin: 2rem 0; }
+            </style>
+          </head>
+          <body>
+            ${content.replace(/\n/g, '<br>')
+                     .replace(/^# (.*)/gm, '<h1>$1</h1>')
+                     .replace(/^## (.*)/gm, '<h2>$1</h2>')
+                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                     .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">')}
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'notes.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
     } catch (error) {
       setError('Error exporting notes: ' + error.message);
@@ -289,7 +327,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8"> {/* Adjusted padding */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8">YouTube Notes App</h1>
         
         {error && (
@@ -299,7 +337,7 @@ const App = () => {
         )}
         
         <form onSubmit={handleVideoSubmit} className="mb-4 sm:mb-8">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4"> {/* Stack vertically on mobile */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <input
               type="text"
               value={videoId}
@@ -317,9 +355,9 @@ const App = () => {
           </div>
         </form>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8"> {/* Main content grid - single column on mobile, two columns on lg screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-8">
           <div className="space-y-4">
-            <div className="aspect-video bg-black rounded-lg overflow-hidden w-full -webkit-overflow-scrolling-touch">
+            <div className="aspect-video bg-black rounded-lg overflow-hidden w-full">
               {videoId && (
                 <YouTubePlayer 
                   videoId={videoId}
@@ -328,10 +366,10 @@ const App = () => {
               )}
             </div>
             
-            <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2">
               <button
                 onClick={captureScreenshot}
-                className="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2"
                 disabled={processingScreenshot || !player}
               >
                 {processingScreenshot ? (
@@ -346,28 +384,76 @@ const App = () => {
                   'Take Screenshot'
                 )}
               </button>
-            </div>
 
-            <div className="flex items-center gap-2 bg-white p-4 rounded-lg border">
-              <input
-                type="checkbox"
-                id="includeScreenshot"
-                checked={includeScreenshot}
-                onChange={(e) => setIncludeScreenshot(e.target.checked)}
-                className="form-checkbox h-4 w-4 text-blue-600"
+              <button
+                onClick={analyzeTranscript}
+                disabled={!transcript.length || analyzingTranscript}
+                className="w-full bg-indigo-500 text-white px-4 py-3 rounded-lg hover:bg-indigo-600 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {analyzingTranscript ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 1 1 0 16V12H0C0 5.373 5.373 0 12 0v4z"
+                      ></path>
+                    </svg>
+                    Analyzing Transcript...
+                  </>
+                ) : (
+                  'Generate Transcript Analysis'
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg p-4 border">
+              <h2 className="text-lg font-bold mb-4">Global Notes</h2>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add your notes here..."
+                className="w-full h-40 p-2 border rounded"
               />
-              <label htmlFor="includeScreenshot" className="text-sm">
-                Include screenshot in AI analysis
-              </label>
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <button
+                  onClick={() => exportNotes('markdown')}
+                  className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
+                >
+                  Export as Markdown
+                </button>
+                <button
+                  onClick={() => exportNotes('html')}
+                  className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
+                >
+                  Save as HTML
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
+                >
+                  Print / Save as PDF
+                </button>
+              </div>
             </div>
 
-            {/* Toggle buttons and content */}
-            <button
-              onClick={() => setShowPrompt(!showPrompt)}
-              className="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              {showPrompt ? 'Hide Caption Prompt' : 'Show Caption Prompt'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPrompt(!showPrompt)}
+                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              >
+                {showPrompt ? 'Hide Caption Prompt' : 'Show Caption Prompt'}
+              </button>
+              <button
+                onClick={() => setShowTranscript(!showTranscript)}
+                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              >
+                {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
+              </button>
+            </div>
 
             {showPrompt && (
               <div className="bg-white rounded-lg p-4 border">
@@ -381,20 +467,13 @@ const App = () => {
               </div>
             )}
 
-            <button
-              onClick={() => setShowTranscript(!showTranscript)}
-              className="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
-            </button>
-
             {showTranscript && transcript.length > 0 && (
-              <div className="border rounded-lg p-4 bg-white overflow-hidden"> {/* Added overflow-hidden */}
+              <div className="border rounded-lg p-4 bg-white overflow-hidden">
                 <h2 className="text-lg font-bold mb-4">Transcript</h2>
                 <div 
-                  className="h-[300px] overflow-y-auto space-y-2 scroll-smooth" /* Added scroll-smooth */
+                  className="h-[300px] overflow-y-auto space-y-2 scroll-smooth"
                   ref={transcriptRef}
-                  style={{ scrollBehavior: 'smooth' }} /* Ensure smooth scrolling */
+                  style={{ scrollBehavior: 'smooth' }}
                 >
                   {transcript.map((item, index) => (
                     <p 
@@ -419,76 +498,58 @@ const App = () => {
               </div>
             )}
           </div>
+        </div>
 
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg p-4 border">
-              <h2 className="text-lg font-bold mb-4">Global Notes</h2>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add your notes here..."
-                className="w-full h-40 p-2 border rounded"
-              />
-              <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                <button
-                  onClick={() => exportNotes('markdown')}
-                  className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
-                >
-                  Export as Markdown
-                </button>
-                <button
-                  onClick={() => exportNotes('pdf')}
-                  className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
-                >
-                  Export as PDF
-                </button>
-                <button
-                  onClick={() => exportNotes('rtf')}
-                  className="w-full sm:flex-1 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-sm sm:text-base"
-                >
-                  Export as RTF
-                </button>
-              </div>
+        {transcriptAnalysis && (
+          <div className="bg-white rounded-lg p-6 border mb-8">
+            <h2 className="text-xl font-bold mb-4">Transcript Analysis</h2>
+            <div className="prose max-w-none whitespace-pre-wrap">
+              {transcriptAnalysis}
             </div>
+          </div>
+        )}
 
-            <div className="space-y-4">
-              {screenshots.map((screenshot, index) => (
-                <div key={index} className="bg-white border rounded-lg p-4">
-                  <h3 className="font-bold text-lg mb-2">Screenshot {index + 1}</h3>
-                  <div className="relative">
-                    <img 
-                      src={screenshot.image} 
-                      alt={`Screenshot ${index + 1}`}
-                      className="w-full rounded mb-4"
+        <div className="space-y-4">
+          {screenshots.map((screenshot, index) => (
+            <div key={index} className="bg-white border rounded-lg p-4">
+              <h3 className="font-bold text-xl mb-4">Screenshot {index + 1}</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="relative">
+                  <img 
+                    src={screenshot.image} 
+                    alt={`Screenshot ${index + 1}`}
+                    className="w-full rounded"
+                  />
+                  <p className="text-sm text-gray-600 mt-2">
+                    Timestamp: {formatTime(screenshot.timestamp)}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Caption:</h4>
+                    <textarea
+                      value={screenshot.caption || ''}
+                      onChange={(e) => {
+                        const updatedScreenshots = [...screenshots];
+                        updatedScreenshots[index] = {
+                          ...screenshot,
+                          caption: e.target.value
+                        };
+                        setScreenshots(updatedScreenshots);
+                      }}
+                      className="w-full p-2 border rounded h-32"
+                      placeholder="Screenshot caption..."
                     />
+                    <button
+                      onClick={() => regenerateCaption(index)}
+                      disabled={processingScreenshot}
+                      className="mt-2 text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      Regenerate Caption
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">
-                      Timestamp: {formatTime(screenshot.timestamp)}
-                    </p>
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Caption:</h4>
-                      <textarea
-                        value={screenshot.caption || ''}
-                        onChange={(e) => {
-                          const updatedScreenshots = [...screenshots];
-                          updatedScreenshots[index] = {
-                            ...screenshot,
-                            caption: e.target.value
-                          };
-                          setScreenshots(updatedScreenshots);
-                        }}
-                        className="w-full p-2 border rounded h-32 sm:h-24" // Taller on mobile
-                        placeholder="Screenshot caption..."
-                      />
-                      <button
-                        onClick={() => regenerateCaption(index)}
-                        disabled={processingScreenshot}
-                        className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
-                      >
-                        Regenerate Caption
-                      </button>
-                    </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Notes:</h4>
                     <textarea
                       value={screenshot.notes || ''}
                       onChange={(e) => {
@@ -500,52 +561,19 @@ const App = () => {
                         setScreenshots(updatedScreenshots);
                       }}
                       placeholder="Add notes for this screenshot..."
-                      className="w-full mt-2 p-2 border rounded h-32 sm:h-24" // Taller on mobile
+                      className="w-full p-2 border rounded h-32"
                     />
-                    <div className="mt-2">
-                      <h4 className="font-medium text-sm">Context:</h4>
-                      <p className="text-sm text-gray-700 italic">
-                        {screenshot.transcriptContext}
-                      </p>
-                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Context:</h4>
+                    <p className="text-sm text-gray-700 italic">
+                      {screenshot.transcriptContext}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-1 lg:col-span-2 space-y-4">
-          <button
-            onClick={analyzeTranscript}
-            disabled={!transcript.length || analyzingTranscript}
-            className="w-full bg-indigo-500 text-white px-4 py-3 rounded-lg hover:bg-indigo-600 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {analyzingTranscript ? (
-              <>
-                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 1 1 0 16V12H0C0 5.373 5.373 0 12 0v4z"
-                  ></path>
-                </svg>
-                Analyzing Transcript...
-              </>
-            ) : (
-              'Generate Transcript Analysis'
-            )}
-          </button>
-
-          {transcriptAnalysis && (
-            <div className="bg-white rounded-lg p-6 border">
-              <h2 className="text-xl font-bold mb-4">Transcript Analysis</h2>
-              <div className="prose max-w-none whitespace-pre-wrap">
-                {transcriptAnalysis}
               </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
