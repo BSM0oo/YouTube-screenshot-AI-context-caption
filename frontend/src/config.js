@@ -11,8 +11,9 @@ const getApiBaseUrl = () => {
     return '';
   }
 
-  // Development mode - use localhost
-  return 'http://localhost:8000';
+  // Development mode - use network IP
+  const networkHost = window.location.hostname;
+  return `http://${networkHost}:8000`;
 };
 
 export const API_BASE_URL = getApiBaseUrl();

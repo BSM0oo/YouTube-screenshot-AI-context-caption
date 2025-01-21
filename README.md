@@ -268,6 +268,7 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 
 ## Changelog
 
+
 ### Updates on 1/20/25:
 - Fixed storage and API handling issues:
   - Added robust storage management system with quota monitoring and cleanup
@@ -710,7 +711,20 @@ Updated requirements.txt with all necessary dependencies
 ```bash
 cd frontend
 npm install
+
+# For desktop development:
 npm run dev
+
+# For mobile testing:
+# 1. Find your machine's local network IP address:
+#    - On Mac/Linux: ifconfig | grep "inet " 
+#    - On Windows: ipconfig
+# 2. Copy .env.local.example to .env.local and set your IP:
+#    VITE_LOCAL_IP=YOUR_IP_HERE (e.g., 192.168.1.100)
+# 3. Run the development server:
+npm run dev
+# 4. Access the app on your mobile device using:
+#    http://YOUR_IP_HERE:5173
 ```
 
 2. Backend Setup:
