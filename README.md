@@ -1,5 +1,39 @@
 # YouTube Notes App
 
+## Mac Backend Server Deployment
+
+### Development Modes
+The application supports different deployment modes through npm commands:
+
+```bash
+# Regular development (localhost backend)
+npm run dev
+
+# Development with remote backend (duckdns)
+npm run macmin_deploy
+
+# Build for production with remote backend
+npm run macmin_build
+```
+
+These commands control the API endpoint configuration:
+- Regular mode uses: `http://localhost:8000`
+- Remote mode uses: `https://youtubenotes.duckdns.org`
+
+### Backend Server Scripts
+Two scripts are provided for managing the Mac backend server:
+- `setup-mac-server.sh`: Configures your Mac as a remote backend server
+- `cleanup-server.sh`: Stops the server and cleans up configurations
+
+The setup includes:
+- Nginx as reverse proxy
+- SSL certificates via Certbot
+- PM2 process management
+- DuckDNS for domain management
+
+For setup details, see `how-to-deploy-backend.md`
+
+
 A web application for taking structured notes while watching YouTube videos. Features include:
 - Screenshot capture with AI-generated captions
 - Single screenshot, burst mode, and mark mode capture options
@@ -10,6 +44,8 @@ A web application for taking structured notes while watching YouTube videos. Fea
 
 
 ## Frontend detailed structure:
+-START-
+
 youtube-notes-app/
 ├── frontend/                # React frontend application
 │   ├── src/
@@ -41,6 +77,8 @@ youtube-notes-app/
 │   │   ├── App.jsx         # Main application component
 │   │   ├── config.js       # Configuration settings
 │   │   └── main.jsx        # Application entry point
+
+-END-
 
 ### Backend structure:
 /modules/
@@ -142,6 +180,9 @@ origin  https://github.com/BSM0oo/YouTube-screenshot-AI-context-caption.git (pus
 current branch = claude_fixes_and_marked_functionality
 
 ## Improvements roadmap and prompts. Fix one by one and ask for approval before going to the next one.
+
+other ideas for future:
+if we wanted to create a version of this app that allows the user to upload an audio file that's then processed into a transcript that can be used for all the features in our prior app (but obviously doesn't take images, just does the transcript related functions), how would you do it?
 
 1/17/25:
 NEW: add a feature during mark mode that allows the user to capture screenshot and add large font text onto the image or in front of the image so it appears part of the image. so there could be a toggle box next to generate captions box called "Label Image". When selected a text box appears that allows the user to enter text to overlay on the image so that the user can quickly understand the video's point. Font size should be 3-4x the size of a typical title heading aka taking up about 25% of the vertical area of the image. Maybe there could be a sample overlay that shows the text size with an input box where the user can enter the font size. 

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "macmin_deploy": "VITE_DEPLOYMENT_ENV=mac_remote vite --host",
+    "macmin_build": "VITE_DEPLOYMENT_ENV=mac_remote vite build"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^16.5.0",
@@ -33,6 +35,7 @@
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.27",
     "tailwindcss": "^3.3.3",
-    "vite": "^4.5.5"
+    "vite": "^4.5.5",
+    "cross-env": "^7.0.3"
   }
 }
