@@ -289,6 +289,18 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 
 
 ### Updates on 1/21/25:
+- Added View Options text to menu button:
+  - Added text label next to menu icon
+  - Made responsive for mobile/desktop
+  - Improved button styling and spacing
+  - Files changed:
+    - /src/features/screenshots/ScreenshotsMenu.jsx
+  - Changes include:
+    - Added responsive text label
+    - Updated button styling
+    - Maintained mobile compatibility
+    - Improved visual clarity
+
 - Removed View Options menu:
   - Removed menu from header area
   - Simplified header to just title
