@@ -46,6 +46,8 @@ const App = () => {
     localStorage.getItem('eraseFilesOnClear') === 'true'
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isTranscriptControlsVisible, setIsTranscriptControlsVisible] = useState(true);
+  const [isNotesOptionsVisible, setIsNotesOptionsVisible] = useState(true);
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(true);
   const [isMainContentVisible, setIsMainContentVisible] = useState(true);
   const [outlinePosition, setOutlinePosition] = usePersistedState('yt-notes-outlinePosition', 'after');
@@ -109,33 +111,35 @@ const App = () => {
             </div>
 
             <div className="h-full space-y-4">
-              <div className="bg-white rounded-lg p-4 border">
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold">Transcript Controls</h2>
+              {isTranscriptControlsVisible && (
+                <div className="bg-white rounded-lg p-4 border">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-bold">Transcript Controls</h2>
+                      {transcript.length > 0 && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAnalysisGenerated(transcript)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                            disabled={isAnalyzing}
+                          >
+                            {isAnalyzing ? 'Generating...' : 'Generate Outline'}
+                          </button>
+                          <button
+                            onClick={() => setIsTranscriptVisible(!isTranscriptVisible)}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm"
+                          >
+                            {isTranscriptVisible ? 'Hide Transcript' : 'Show Transcript'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     {transcript.length > 0 && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAnalysisGenerated(transcript)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                          disabled={isAnalyzing}
-                        >
-                          {isAnalyzing ? 'Generating...' : 'Generate Outline'}
-                        </button>
-                        <button
-                          onClick={() => setIsTranscriptVisible(!isTranscriptVisible)}
-                          className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm"
-                        >
-                          {isTranscriptVisible ? 'Hide Transcript' : 'Show Transcript'}
-                        </button>
-                      </div>
+                      <TranscriptPrompt onSubmit={handlePromptSubmit} />
                     )}
                   </div>
-                  {transcript.length > 0 && (
-                    <TranscriptPrompt onSubmit={handlePromptSubmit} />
-                  )}
                 </div>
-              </div>
+              )}
 
               {isTranscriptVisible && (
                 <TranscriptViewer
@@ -147,22 +151,24 @@ const App = () => {
                 />
               )}
 
-              <div className="mt-4">
-                <NotesManager
-                  title="Notes & Export Options"
-                  showButtonText={isNotesVisible => 
-                    isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
-                  }
-                  videoId={videoId}
-                  videoTitle={videoInfo?.title}
-                  videoDescription={videoInfo?.description}
-                  notes={notes}
-                  onNotesChange={setNotes}
-                  screenshots={screenshots}
-                  transcriptAnalysis={transcriptAnalysis}
-                  transcript={transcript}
-                />
-              </div>
+              {isNotesOptionsVisible && (
+                <div className="mt-4">
+                  <NotesManager
+                    title="Notes & Export Options"
+                    showButtonText={isNotesVisible => 
+                      isNotesVisible ? 'Hide Notes & Export Options' : 'Show Notes & Export Options'
+                    }
+                    videoId={videoId}
+                    videoTitle={videoInfo?.title}
+                    videoDescription={videoInfo?.description}
+                    notes={notes}
+                    onNotesChange={setNotes}
+                    screenshots={screenshots}
+                    transcriptAnalysis={transcriptAnalysis}
+                    transcript={transcript}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -178,6 +184,10 @@ const App = () => {
           setSortOldestFirst={setSortOldestFirst}
           groupByType={groupByType}
           setGroupByType={setGroupByType}
+          isTranscriptControlsVisible={isTranscriptControlsVisible}
+          setIsTranscriptControlsVisible={setIsTranscriptControlsVisible}
+          isNotesOptionsVisible={isNotesOptionsVisible}
+          setIsNotesOptionsVisible={setIsNotesOptionsVisible}
           onEditCaptions={() => {
             // Implementation for editing captions
             console.log('Edit captions');

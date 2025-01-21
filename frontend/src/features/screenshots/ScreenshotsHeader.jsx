@@ -10,6 +10,10 @@ const ScreenshotsHeader = ({
   setSortOldestFirst,
   groupByType,
   setGroupByType,
+  isTranscriptControlsVisible,
+  setIsTranscriptControlsVisible,
+  isNotesOptionsVisible,
+  setIsNotesOptionsVisible,
   onEditCaptions,
   onReorderScreenshots
 }) => {
@@ -26,6 +30,10 @@ const ScreenshotsHeader = ({
         setSortOldestFirst={setSortOldestFirst}
         groupByType={groupByType}
         setGroupByType={setGroupByType}
+        isTranscriptControlsVisible={isTranscriptControlsVisible}
+        setIsTranscriptControlsVisible={setIsTranscriptControlsVisible}
+        isNotesOptionsVisible={isNotesOptionsVisible}
+        setIsNotesOptionsVisible={setIsNotesOptionsVisible}
         onEditCaptions={onEditCaptions}
         onReorderScreenshots={onReorderScreenshots}
       />

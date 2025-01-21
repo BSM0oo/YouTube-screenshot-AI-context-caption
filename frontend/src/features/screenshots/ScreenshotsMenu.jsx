@@ -21,6 +21,10 @@ const ScreenshotsMenu = ({
   setSortOldestFirst,
   groupByType,
   setGroupByType,
+  isTranscriptControlsVisible,
+  setIsTranscriptControlsVisible,
+  isNotesOptionsVisible,
+  setIsNotesOptionsVisible,
   onEditCaptions,
   onReorderScreenshots
 }) => {
@@ -41,6 +45,25 @@ const ScreenshotsMenu = ({
             <Eye className="mr-2 h-4 w-4" />
             {isMainContentVisible ? 'Hide Video & Transcript' : 'Show Video & Transcript'}
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuLabel className="text-sm font-medium">Show/Hide Elements</DropdownMenuLabel>
+          <DropdownMenuCheckboxItem
+            checked={isTranscriptControlsVisible}
+            onCheckedChange={setIsTranscriptControlsVisible}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Transcript Controls
+          </DropdownMenuCheckboxItem>
+          
+          <DropdownMenuCheckboxItem
+            checked={isNotesOptionsVisible}
+            onCheckedChange={setIsNotesOptionsVisible}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Notes & Export Options
+          </DropdownMenuCheckboxItem>
 
           <DropdownMenuSeparator />
 
