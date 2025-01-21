@@ -289,6 +289,42 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 
 
 ### Updates on 1/21/25:
+- Removed View Options menu:
+  - Removed menu from header area
+  - Simplified header to just title
+  - Removed unused imports and code
+  - Files changed:
+    - /src/components/GalleryControls.jsx
+  - Changes include:
+    - Removed dropdown menu and button
+    - Removed unused imports
+    - Simplified component structure
+    - Cleaner, simpler header design
+
+- Improved header layout:
+  - Moved View Options menu to top right
+  - Removed menu from next to header text
+  - Improved spacing and alignment
+  - Files changed:
+    - /src/components/GalleryControls.jsx
+  - Changes include:
+    - Restructured header layout
+    - Improved visual hierarchy
+    - Better button placement
+    - Cleaner overall design
+
+- Streamlined controls interface:
+  - Removed duplicate control buttons
+  - Consolidated all controls into dropdown menu
+  - Maintained all functionality in View Options menu
+  - Files changed:
+    - /src/components/GalleryControls.jsx
+  - Changes include:
+    - Removed redundant button row
+    - Kept all functionality in dropdown
+    - Improved UI clarity and reduced clutter
+    - Maintained existing state management
+
 - Added video URL display:
   - Added clickable video URL under video title
   - Enhanced main layout header styling
