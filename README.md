@@ -289,6 +289,43 @@ i want you to use the tools in the youtube_info_extractor.py in PythonExamples f
 
 
 ### Updates on 1/21/25:
+- Added Save/Cancel functionality to prompt cards:
+  - Added Save and Cancel buttons in edit mode
+  - Added temporary state for edits
+  - Improved edit UX with confirmation
+  - Files changed:
+    - /src/components/PromptResponseCard.jsx
+  - Changes include:
+    - Added temp state for edits
+    - Added Save/Cancel buttons
+    - Added proper handlers
+    - Improved UX workflow
+
+- Fixed prompt response card controls:
+  - Fixed delete functionality
+  - Added working edit mode
+  - Improved state management
+  - Files changed:
+    - /src/components/PromptResponseCard.jsx
+    - /src/components/DraggableGalleryGrid.jsx
+  - Changes include:
+    - Added local editing state
+    - Fixed delete handler connection
+    - Improved edit mode toggle
+    - Added proper props passing
+
+- Added controls to transcript query cards:
+  - Added Delete button
+  - Added Edit button
+  - Made buttons match screenshot card styling
+  - Files changed:
+    - /src/components/PromptResponseCard.jsx
+  - Changes include:
+    - Added delete functionality
+    - Added edit functionality
+    - Added confirmation dialog for delete
+    - Made buttons print-hidden
+
 - Added View Options text to menu button:
   - Added text label next to menu icon
   - Made responsive for mobile/desktop

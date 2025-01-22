@@ -1,24 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-const PromptResponseCard = ({ screenshot, editMode, index, onUpdatePromptResponse }) => {
-  const handleUpdate = (field, value) => {
+const PromptResponseCard = ({ screenshot, index, onUpdatePromptResponse, onDeletePromptResponse }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempPrompt, setTempPrompt] = useState(screenshot.prompt);
+  const [tempResponse, setTempResponse] = useState(screenshot.response);
+
+  const handleSave = () => {
     onUpdatePromptResponse(index, {
       ...screenshot,
-      [field]: value
+      prompt: tempPrompt,
+      response: tempResponse
     });
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setTempPrompt(screenshot.prompt);
+    setTempResponse(screenshot.response);
+    setIsEditing(false);
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-6 space-y-4">
-        {editMode ? (
+        {isEditing ? (
           <>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Query:</label>
               <textarea
-                value={screenshot.prompt}
-                onChange={(e) => handleUpdate('prompt', e.target.value)}
+                value={tempPrompt}
+                onChange={(e) => setTempPrompt(e.target.value)}
                 className="w-full min-h-[80px] p-3 border rounded-md resize-y text-sm font-sans"
                 placeholder="Enter your query..."
               />
@@ -26,11 +38,25 @@ const PromptResponseCard = ({ screenshot, editMode, index, onUpdatePromptRespons
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Response:</label>
               <textarea
-                value={screenshot.response}
-                onChange={(e) => handleUpdate('response', e.target.value)}
+                value={tempResponse}
+                onChange={(e) => setTempResponse(e.target.value)}
                 className="w-full min-h-[200px] p-3 border rounded-md resize-y text-sm font-sans"
                 placeholder="Enter the response..."
               />
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button
+                onClick={handleCancel}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Save Changes
+              </button>
             </div>
           </>
         ) : (
@@ -64,8 +90,26 @@ const PromptResponseCard = ({ screenshot, editMode, index, onUpdatePromptRespons
                 </ReactMarkdown>
               </div>
             </div>
-          </>
-        )}
+              <div className="flex items-center gap-4 mt-4 print:hidden">
+              <button
+              onClick={() => {
+              if (window.confirm('Are you sure you want to delete this query?')) {
+              onDeletePromptResponse(index);
+              }
+              }}
+              className="text-red-600 hover:text-red-800"
+              >
+              Delete
+              </button>
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  {isEditing ? 'Save Changes' : 'Edit'}
+                </button>
+              </div>
+        </>
+      )}
       </div>
     </div>
   );

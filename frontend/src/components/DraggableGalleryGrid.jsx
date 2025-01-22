@@ -59,9 +59,9 @@ const DraggableGalleryGrid = ({
                   <PromptResponseCard
                     key={originalIndex}
                     screenshot={screenshot}
-                    editMode={editMode}
                     index={originalIndex}
                     onUpdatePromptResponse={onUpdatePromptResponse}
+                    onDeletePromptResponse={onDeleteScreenshot}
                   />
                 ) : (
                   <ScreenshotCard
@@ -130,6 +130,7 @@ const DraggableGalleryGrid = ({
                           editMode={editMode}
                           index={index}
                           onUpdatePromptResponse={onUpdatePromptResponse}
+                          onDeletePromptResponse={onDeleteScreenshot}
                         />
                       ) : (
                         <ScreenshotCard
